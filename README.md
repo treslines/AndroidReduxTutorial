@@ -1,4 +1,4 @@
-# Android Redux Tutorial Get Started Minimalistic Guide
+# Android Redux Get Started Tutorial - Minimalistic Guide to Copy / Paste!
 Sample / example android redux kotlin implementation / tutorial as a get started guide 
 ## :dart: Without third party library, just plain kotlin!
 
