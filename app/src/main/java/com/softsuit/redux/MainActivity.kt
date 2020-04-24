@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
 //        val subscriber : StoreSubscriber<CounterState> = {
 //            xIdTxtCounter.text = "${it.value}"
 //        }
-//        DI.counterStore.subscribe(subscriber);
+//        DI.counterStore.subscribe(subscriber)
 
 //      -------------------------------------------------------------------------------------------
 
