@@ -1,6 +1,6 @@
 package com.softsuit.redux
 
-// tutorial based on:
+// tutorial inspired by:
 // https://medium.com/swlh/how-to-implement-redux-in-kotlin-part-1-the-basics-db2854613079
 
 // 1. define the entities we're working with - redux pattern defined ONCE!
