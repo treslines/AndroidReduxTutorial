@@ -1,6 +1,9 @@
 # Android Redux Tutorial Get Started Minimalistic Guide
 Sample / example android redux kotlin implementation / tutorial as a get started guide 
-### :dart: Without third party library, just plain kotlin as simple as that:
+## :dart: Without third party library, just plain kotlin!
+
+### Core redux
+Basic redux pattern definitions.
 
 ```kotlin
 // 1. define the entities we're working with - redux pattern defined ONCE!
@@ -16,7 +19,11 @@ interface Store <S: State> {
     fun unsubscribe(subscriber: StoreSubscriber <S>): Boolean
     fun getCurrentState(): S
 }
+```
+### Generic store implementation
+A sample, generic store implementation to be used everywhere in your app.
 
+```kotlin
 // 2. default store implementation to be used everywhere in your app - implemented ONCE!
 class DefaultStore <S: State>(initialState: S,private val reducer: Reducer<S>): Store<S> {
 
@@ -50,5 +57,30 @@ object DI {
     val counterStore = DefaultStore(initialState = CounterState(), reducer = CounterStateReducer)
     // define other stores here as soon as they are defined and needed ...
     // val storeMyNextNeed = DefaultStore(initialState = CounterState(), reducer = CounterStateReducer)
+}
+```
+
+### Reducer implementation of bullet 3.
+The actually implementation of a simple reducer with its states and actions.
+
+```kotlin
+// 3. implement the entities for our needs - actions can contain various states as a group
+data class CounterState(val value: Int = 0): State
+
+// 3.1 implement counter state actions as a group of possible state changes
+sealed class CounterActions: Action {
+    object Init: CounterActions()
+    object Increment: CounterActions()
+    object Decrement: CounterActions()
+}
+
+// 3.2 thank to typealias, any reducer can be typed and implemented on the fly acc. to your needs
+val CounterStateReducer: Reducer<CounterState> = { old, action ->
+    when (action) {
+        is CounterActions.Init -> CounterState()
+        is CounterActions.Increment -> old.copy(value = old.value + 1)
+        is CounterActions.Decrement -> old.copy(value = old.value - 1)
+        else -> old
+    }
 }
 ```
