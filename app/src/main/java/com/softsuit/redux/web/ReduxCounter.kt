@@ -1,4 +1,4 @@
-package com.softsuit.redux
+package com.softsuit.redux.web
 
 // 3. implement the entities for our needs - actions can contain various states as a group
 data class CounterState(val value: Int = 0): State
