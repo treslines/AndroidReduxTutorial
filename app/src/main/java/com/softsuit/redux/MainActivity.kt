@@ -3,8 +3,6 @@ package com.softsuit.redux
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import com.softsuit.redux.web.CounterActions
-import com.softsuit.redux.web.DI
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -23,15 +21,15 @@ class MainActivity : AppCompatActivity() {
 //        body is where our component grabs the instance of 'CounterState' and assigns its value.
 
 //        This snippet does the same as 1. in a little 'verboser' manner
-//        val subscriber : StoreSubscriber<CounterState> = {
+//        val listener : StateChangeListener<CounterState> = {
 //            xIdTxtCounter.text = "${it.value}"
 //        }
-//        DI.counterStore.subscribe(subscriber)
+//        DI.counterStore.addStateChangeListener(listener)
 
 //      -------------------------------------------------------------------------------------------
 
         // 1. web: register any component interested into counter state changes
-        // DI.counterStore.subscribe {
+        // DI.counterStore.addStateChangeListener {
         //    xIdTxtCounter.text = "${it.value}"
         // }
 
@@ -42,12 +40,12 @@ class MainActivity : AppCompatActivity() {
         // with full package name just to avoid conflict
 
         // 1. oo: register any component interested into counter state changes
-        com.softsuit.redux.oo.DI.counterStore.subscribe {
+        com.softsuit.redux.oo.DI.counterStore.addStateChangeListener {
             xIdTxtCounter.text = "${it.value}"
         }
 
         // 2. oo: dispatch initial action to archive a defined state
-        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterInitialAction())
+        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterInitialAction("main activity, on create, initial state"))
 
     }
 
@@ -57,13 +55,13 @@ class MainActivity : AppCompatActivity() {
         // DI.counterStore.dispatch(action = CounterActions.Decrement)
 
         // oo - with full package name just to avoid conflict
-        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterDecrementAction())
+        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterDecrementAction("decrement"))
     }
     fun increment(view: View) {
         // web
         // DI.counterStore.dispatch(action = CounterActions.Increment)
 
         // oo - with full package name just to avoid conflict
-        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterIncrementAction())
+        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterIncrementAction("increment"))
     }
 }
