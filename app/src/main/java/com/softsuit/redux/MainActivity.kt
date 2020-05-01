@@ -1,9 +1,12 @@
 package com.softsuit.redux
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import com.softsuit.redux.mid.*
+import com.softsuit.redux.mid.DI.reduxStore
 import kotlinx.android.synthetic.main.activity_main.*
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,15 +40,28 @@ class MainActivity : AppCompatActivity() {
         // DI.counterStore.dispatch(action = CounterActions.Init)
 
 //      -------------------------------------------------------------------------------------------
-        // with full package name just to avoid conflict
 
         // 1. oo: register any component interested into counter state changes
-        com.softsuit.redux.oo.DI.counterStore.addStateChangeListener {
-            xIdTxtCounter.text = "${it.value}"
-        }
+        // ooDI.counterStore.addStateChangeListener {
+        //    xIdTxtCounter.text = "${it.value}"
+        // }
 
         // 2. oo: dispatch initial action to archive a defined state
-        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterInitialAction("main activity, on create, initial state"))
+        // ooDI.counterStore.dispatch(ooCounterInitialAction("main activity, on create, initial state"))
+
+        // -------------------------------------------------------------------------------------------
+
+        // 1. mid: register any component interested into counter state changes
+        reduxStore.subscribe {
+            when (it.internal) {
+                is ResetCounterState -> xIdTxtCounter.text = "0"
+                is IncrementCounterState -> xIdTxtCounter.text = (xIdTxtCounter.text.toString().toInt() + 1).toString()
+                is DecrementCounterState -> xIdTxtCounter.text = (xIdTxtCounter.text.toString().toInt() - 1).toString()
+            }
+        }
+
+        // 2. mid: dispatch search event to database
+        reduxStore.dispatch(ResetCounterAction("Reset Counter Event"))
 
     }
 
@@ -54,14 +70,25 @@ class MainActivity : AppCompatActivity() {
         // web
         // DI.counterStore.dispatch(action = CounterActions.Decrement)
 
-        // oo - with full package name just to avoid conflict
-        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterDecrementAction("decrement"))
+        // oo
+        // ooDI.counterStore.dispatch(ooCounterDecrementAction("decrement"))
+
+        // mid
+        reduxStore.dispatch(DecrementCounterAction("Decrement Counter Event"))
     }
     fun increment(view: View) {
         // web
         // DI.counterStore.dispatch(action = CounterActions.Increment)
 
-        // oo - with full package name just to avoid conflict
-        com.softsuit.redux.oo.DI.counterStore.dispatch(com.softsuit.redux.oo.CounterIncrementAction("increment"))
+        // oo
+        // ooDI.counterStore.dispatch(ooCounterIncrementAction("increment"))
+
+        // mid
+        reduxStore.dispatch(IncrementCounterAction("Increment Counter Event"))
+    }
+
+    fun search(view: View) {
+        // mid
+        reduxStore.dispatch(DebugAction())
     }
 }

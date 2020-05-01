@@ -16,7 +16,10 @@ interface Store <S: State> {
 }
 
 // 2. store implementation to be used everywhere in your app - implemented ONCE!
-class DefaultStore <S: State>(val initialState: S, val reducers: List<ActionReducer<S>> = listOf()): Store<S> {
+class DefaultStore<S : State>(
+    val initialState: S,
+    val reducers: List<ActionReducer<S>> = listOf()
+) : Store<S> {
 
     private val listeners = mutableSetOf<StateChangeListener<S>>()
 
@@ -40,21 +43,9 @@ class DefaultStore <S: State>(val initialState: S, val reducers: List<ActionRedu
 
     override fun getCurrentState(): S = currentState
 
-    private fun applyReducers() {
-        var newState = currentState
-        for (reducer in reducers) {
-            newState = reducer.reduce(newState)
-        }
-        if (newState == currentState) {
-            // No change in state
-            return
-        }
-        currentState = newState // will fire listener notification in setter
-    }
-
 }
 
-// 3. implement actions with its reducer - see ReduxCounter.kt
+// 3. implement actions with its reducer - see ReduxActions.kt
 
 // 4. use store in our app over dependency injection. This is one way to do it.
 //    but acc. to a droidcon 2018 video presentation, it should be avoid to have
@@ -63,25 +54,4 @@ class DefaultStore <S: State>(val initialState: S, val reducers: List<ActionRedu
 object DI {
     val counterStore = DefaultStore( initialState = CounterState())
     // define other stores here as soon as they are defined and needed ...
-}
-
-
-// 5. middleware
-interface DefaultMiddleware<S: State> {
-    fun applyMiddleware(appState: S, action: ActionReducer<S>): ActionReducer<S>
-}
-
-class SearchApiMiddleware<S: State>(initialState: S): DefaultMiddleware<S> {
-    override fun applyMiddleware(appState: S, action: ActionReducer<S>): ActionReducer<S> {
-        return when(action) {
-            is CounterDecrementAction -> {
-                // This will make an api call in background
-                action.reduce(appState)
-                // A new action that we created.
-                // This action will tell the reducer that search results are being loaded
-                CounterIncrementAction("increment") as ActionReducer<S>
-            }
-            else -> action
-        }
-    }
 }

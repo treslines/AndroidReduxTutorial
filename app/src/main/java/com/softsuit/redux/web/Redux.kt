@@ -40,7 +40,7 @@ class DefaultStore <S: State>(initialState: S, private val reducer: Reducer<S>):
     override fun getCurrentState(): S = currentState
 }
 
-// 3. implement the entities for our needs - see ReduxCounter.kt as a sample implementation
+// 3. implement the entities for our needs - see ReduxActions.kt as a sample implementation
 
 // 4. use store in our app over dependency injection
 object DI {
