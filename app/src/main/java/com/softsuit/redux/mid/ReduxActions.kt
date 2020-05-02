@@ -14,14 +14,36 @@ import android.util.Log
 // WAY 1: most programmers are used to. just implement the method's signature, no magic!
 class ResetCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
-        return AppState(description = "Reset Counter State", internal = ResetCounterState(), data = old.data.copy())
+        old.data["CounterState"] = 0
+        return AppState(description = "ResetCounterState", internal = ResetCounterState(), data = LinkedHashMap(old.data))
+    }
+
+    companion object Id {
+        val description = "Reset Counter Action"
     }
 }
 
-// WAY 2: assign return type directly to method - very nice!
+// WAY 2: assign return directly to method - very nice!
 class DecrementCounterAction(val eventName: String) : Action<AppState> {
     // does the same as way 1 but in one liner
-    override fun reduce(old: AppState) = AppState(description = "Decrement Counter State", internal = DecrementCounterState(), data = old.data.copy())
+    override fun reduce(old: AppState): AppState {
+
+        when (old.data["CounterState"]) {
+            null -> old.data["CounterState"] = 0.minus(1)
+            else -> {
+                if (old.data["CounterState"] == null) {
+                    old.data["CounterState"] = 0
+                }
+                old.data["CounterState"] = old.data["CounterState"].toString().toInt().minus(1)
+            }
+        }
+
+        return AppState(description = "DecrementCounterState", internal = DecrementCounterState(), data = LinkedHashMap(old.data))
+    }
+
+    companion object Id {
+        val description = "Decrement Counter Action"
+    }
 }
 
 // WAY 3: implement a typealias and assign it to the method! - also nice whenever needed!
@@ -29,11 +51,26 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
 
     // reducer logic implemented here
     private val reducer: Reducer<AppState> = {
-        AppState(description = "Increment Counter State", internal = IncrementCounterState(), data = it.data.copy())
+
+        when (it.data["CounterState"]) {
+            null -> it.data["CounterState"] = 0.plus(1)
+            else -> {
+                if (it.data["CounterState"] == null) {
+                    it.data["CounterState"] = 0
+                }
+                it.data["CounterState"] = it.data["CounterState"].toString().toInt().plus(1)
+            }
+        }
+
+        AppState(description = "IncrementCounterState", internal = IncrementCounterState(), data = LinkedHashMap(it.data))
     }
 
     // reducer result assigned to the method as return type
     override fun reduce(old: AppState) = reducer.invoke(old)
+
+    companion object Id {
+        val description = "Increment Counter Action"
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -46,20 +83,23 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
 
 class SearchingAction(private val eventDescription: String) : Action<AppState> {
 
-    override fun reduce(old: AppState) = AppState(description, SearchingState(), old.data.copy())
+    override fun reduce(old: AppState): AppState {
+        old.data["SearchingState"] = true
+        return AppState(description = "SearchingState", internal = SearchingState(), data = LinkedHashMap(old.data))
+    }
 
     companion object Id {
         val description = "Searching"
     }
 }
 
-class SearchResultAction(private val eventDescription: String, private val resultData: Data) :
-    Action<AppState> {
+class SearchResultAction(private val eventDescription: String, private val resultData: String) : Action<AppState> {
 
     override fun reduce(old: AppState): AppState {
         // simulating long search process
         Thread.sleep(1000 * 5)
-        return AppState(description, SearchResultState(), resultData)
+        old.data["SearchResultState"] = resultData
+        return AppState(description = "SearchResultState", internal = SearchResultState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -67,9 +107,12 @@ class SearchResultAction(private val eventDescription: String, private val resul
     }
 }
 
-class SearchForKeywordAction(private val eventDescription: String) : Action<AppState> {
+class SearchForKeywordAction(private val eventDescription: String, private val keyword: String) : Action<AppState> {
 
-    override fun reduce(old: AppState) = AppState(description, SearchForKeywordState(), old.data.copy())
+    override fun reduce(old: AppState): AppState {
+        old.data["SearchForKeywordState"] = keyword
+        return AppState(description, SearchForKeywordState(), LinkedHashMap(old.data))
+    }
 
     companion object Id {
         val description = "Search For Keyword Action"
@@ -78,7 +121,10 @@ class SearchForKeywordAction(private val eventDescription: String) : Action<AppS
 
 class WaitingForUserInputAction(private val eventDescription: String) : Action<AppState> {
 
-    override fun reduce(old: AppState) = AppState(description, WaitingForUserInputState(), old.data.copy())
+    override fun reduce(old: AppState): AppState {
+        old.data["WaitingForUserInputState"] = true
+        return AppState(description = "WaitingForUserInputState", internal = WaitingForUserInputState(), data = LinkedHashMap(old.data))
+    }
 
     companion object Id {
         val description = "WaitingForUserInputAction"
@@ -97,7 +143,7 @@ class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
         when (it.description) {
-            "Searching" -> {
+            "SearchingState" -> {
                 Log.d("debugging", it.data.toString())
             }
         }
@@ -105,6 +151,25 @@ class DebugAction() : Action<AppState> {
     }
 
     override fun reduce(old: AppState) = reducer(old)
+
+    companion object Id {
+        val description = "Debug Action"
+    }
+}
+
+class LogAction() : Action<AppState> {
+
+    private val reducer: Reducer<AppState> = {
+        Log.d("logging", "AppData: ${it.description}")
+        Log.d("logging", "AppData>Internal: ${it.internal?.description}")
+        it
+    }
+
+    override fun reduce(old: AppState) = reducer(old)
+
+    companion object Id {
+        val description = "Log Action"
+    }
 }
 
 class LogMiddlewareAction(val stateDesc: String, val actionDesc: String, val option: LogOption) : Action<AppState> {
@@ -117,6 +182,10 @@ class LogMiddlewareAction(val stateDesc: String, val actionDesc: String, val opt
             LogOption.APP_AFTER_CHANGE -> Log.d("app", "state --> $stateDesc, action OUT --> $actionDesc")
         }
         return old
+    }
+
+    companion object Id {
+        val description = "Log Middleware Action"
     }
 }
 

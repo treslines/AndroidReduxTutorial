@@ -16,21 +16,15 @@ typealias Subscriber <T> = (T) -> Unit
 
 /** store implements this contract. */
 interface Store<S : State> {
-    fun reduce(action: Action<S>)
+    fun reduce(action: Action<S>): S
     fun dispatch(action: Action<S>)
     fun subscribe(subscriber: Subscriber<S>): Boolean
     fun unsubscribe(subscriber: Subscriber<S>): Boolean
     fun getAppState(): S
 }
 
-/** app inital state */
-class AppInitialState : AppState("App Initial State")
-
-/** represents the app's state tree content and designed as data class to profit from built in copy method. */
-data class Data(var data: Any = Any()) // could be whatever you need
-
 /** the app's state tree. In this case only a description and its data. */
-open class AppState(open var description: String, var internal: State = AppInitialState(), var data: Data = Data()) : State
+open class AppState(open var description: String, var internal: AppState? = null, var data: MutableMap<String, Any> = mutableMapOf()) : State
 
 /** represents the single source of truth in your andorid app. */
 class AppStore<S : State>(initialState: S, private val middles: List<Middleware<S>> = listOf()) : Store<S> {
@@ -47,8 +41,9 @@ class AppStore<S : State>(initialState: S, private val middles: List<Middleware<
         }
 
     /** reduces any action passed in causing the current app state to change or not */
-    override fun reduce(action: Action<S>) {
+    override fun reduce(action: Action<S>): S {
         appState = action.reduce(appState)
+        return appState
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */

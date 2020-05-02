@@ -38,4 +38,26 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Button
+        android:id="@+id/xIdBtnSearch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="search"
+        android:text="Dispatch search middleware"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:textAllCaps="false"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/xIdTxtCounter" />
+
+    <Button
+        android:id="@+id/xBtnDebug"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dispatch debug middleware"
+        android:textAllCaps="false"
+        android:onClick="debug"
+        app:layout_constraintEnd_toEndOf="@+id/xIdBtnSearch"
+        app:layout_constraintStart_toStartOf="@+id/xIdBtnSearch"
+        app:layout_constraintTop_toBottomOf="@+id/xIdBtnSearch" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
