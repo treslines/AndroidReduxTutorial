@@ -142,12 +142,13 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
-        when (it.description) {
-            "SearchingState" -> {
-                Log.d("debugging", it.data.toString())
+        when (it.internal) {
+            is DecrementCounterState -> {
+                Log.d("debugging", it.data["CounterState"].toString())
             }
         }
-        it
+        it.data["DebugState"] = true
+        AppState(description, DebugState(), LinkedHashMap(it.data))
     }
 
     override fun reduce(old: AppState) = reducer(old)

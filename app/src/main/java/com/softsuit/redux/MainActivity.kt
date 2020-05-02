@@ -40,8 +40,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 4. dispatch actions on user input
-    fun decrement(view: View) = reduxStore.dispatch(DecrementCounterAction("Decrement Counter Event"))
-    fun increment(view: View) = reduxStore.dispatch(IncrementCounterAction("Increment Counter Event"))
+    fun decrement(view: View) = reduxStore.reduce(DecrementCounterAction("Decrement Counter Event"))
+    fun increment(view: View) = reduxStore.reduce(IncrementCounterAction("Increment Counter Event"))
 
     // 5. dispatch middleware action on user input
     fun search(view: View) = reduxStore.dispatch(SearchingAction("Searching Event"))

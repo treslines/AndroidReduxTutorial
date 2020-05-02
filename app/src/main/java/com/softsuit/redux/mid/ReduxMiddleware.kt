@@ -73,13 +73,13 @@ class DebugMiddleware : Middleware<AppState> {
         middlesIndex: Int,
         store: AppStore<AppState>
     ) {
-        store.reduce(LogAction()) // simulating creation of a new action just for logging
+        LogAction().reduce(state) // simulating creation of a new action just for logging
         when (action) {
             is DebugAction -> {
                 action.reduce(state)
-                next(state, action, middles, middlesIndex, store)
+                //next(store.reduce(action), action, middles, middlesIndex, store)
             }
-            else -> next(state, action, middles, middlesIndex, store)
+            //else -> next(state, action, middles, middlesIndex, store)
         }
     }
 }
