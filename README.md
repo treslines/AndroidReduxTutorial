@@ -2,6 +2,11 @@
 # Android Redux - Get Started Tutorial - Minimalistic Guide! (Classic Web and OO-Implementation)
 ___
 :dart: A complete implementation of redux for android apps using kotlin and including middlewares. No third party library, just plain kotlin!
+
+<p align="center">
+  <img src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/redux.png">
+</p>
+
 ___
 
 # Pros - Cons - Challanges - Good to Know
@@ -29,7 +34,10 @@ ___
 5. You'll understand how components can subscribe to state changes  
 6. At the end while cloning this project, you should get the app as shown bellow:
 
-![alt text](https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/reduxtutorial.jpg "Redux Tutorial App")
+<p align="center">
+  <img width="340" height="271" src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/reduxtutorial.jpg">
+</p>
+
 ___
 # Why shall i use the OO-Version?
 Well, the question is not if you should use it or not. **It is much more about the question:** 
@@ -42,7 +50,9 @@ If you take a look at this simple but very often used web-implementation bellow,
 
 The project root is very simplistic and there you are gonna find a structure like this bellow, where in **web** folder you'll find a web sample implementation of redux (that's where i got inpired from), in **oo** folder the object oriented implementation without middleware and in **mid** folder you are gonna find the complete middleware, object oriented implementation, which is used in the main activity. 
 
-![alt text](https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/project.jpg "Redux Tutorial Project")
+<p align="center">
+  <img width="152" height="143" src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/project.jpg">
+</p>
 
 ___
 ### Core redux
