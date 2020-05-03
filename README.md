@@ -15,7 +15,7 @@ ___
 ![alt text](https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/reduxtutorial.jpg "Redux Tutorial App")
 ___
 # Why shall i use the OO-Version?
-Well, the questions is not if you should use it or not. **It is much more the question:** 
+Well, the question is not if you should use it or not. **It is much more about the question:** 
 
 > *Is there a way to design my redux code in such a way, that my code complains with the Open-Close-Principle (OCP)?* 
 
