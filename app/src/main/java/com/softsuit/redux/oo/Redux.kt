@@ -17,8 +17,7 @@ interface Store <S: State> {
 
 // 2. store implementation to be used everywhere in your app - implemented ONCE!
 class DefaultStore<S : State>(
-    val initialState: S,
-    val reducers: List<ActionReducer<S>> = listOf()
+    val initialState: S
 ) : Store<S> {
 
     private val listeners = mutableSetOf<StateChangeListener<S>>()
@@ -50,7 +49,7 @@ class DefaultStore<S : State>(
 // 4. use store in our app over dependency injection. This is one way to do it.
 //    but acc. to a droidcon 2018 video presentation, it should be avoid to have
 //    multiple stores, since you may run into troubles while trying to maintain
-//    it in sync.
+//    multiple stores in sync.
 object DI {
     val counterStore = DefaultStore( initialState = CounterState())
     // define other stores here as soon as they are defined and needed ...

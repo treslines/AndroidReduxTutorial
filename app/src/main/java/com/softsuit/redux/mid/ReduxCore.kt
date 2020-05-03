@@ -27,17 +27,19 @@ interface Store<S : State> {
 open class AppState(open var description: String, var internal: AppState? = null, var data: MutableMap<String, Any> = mutableMapOf()) : State
 
 /** represents the single source of truth in your andorid app. */
-class AppStore<S : State>(initialState: S, private val middles: List<Middleware<S>> = listOf()) : Store<S> {
+class AppStore<S : State>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
 
     /** android component subscriptions. */
     private val subscribers = mutableSetOf<Subscriber<S>>()
 
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
-        set(value) {
-            field = value
-            // this is where the notification happens
-            subscribers.forEach { it(value) }
+        set(newState) {
+            if (appState != newState) {
+                field = newState
+                // this is where the notification happens
+                subscribers.forEach { it(newState) }
+            }
         }
 
     /** reduces any action passed in causing the current app state to change or not */
@@ -59,7 +61,7 @@ class AppStore<S : State>(initialState: S, private val middles: List<Middleware<
     override fun getAppState() = appState
 
     /** whenever dispatch is called, all registered middlewares get the chance to react to actions */
-    private fun applyMiddleware(action: Action<S>) = middles[0].apply(appState, action, middles, 0, this)
+    private fun applyMiddleware(action: Action<S>) = chain[0].apply(appState, action, chain, 0, this)
 }
 
 /**
@@ -95,8 +97,8 @@ interface Middleware<S : State> {
     fun apply(
         state: S,
         action: Action<S>,
-        middles: List<Middleware<S>>,
-        middlesIndex: Int,
+        chain: List<Middleware<S>>,
+        chainIndex: Int,
         store: AppStore<S>
     )
 
@@ -104,9 +106,7 @@ interface Middleware<S : State> {
      * You should not call this method by yourself. It was designed to be used by
      * next() method to decide if the middleware reached the end of the chain or not.
      */
-    private fun isEndOfChain(nextIndex: Int, middles: List<Middleware<S>>): Boolean {
-        return nextIndex == middles.size
-    }
+    private fun isEndOfChain(nextIndex: Int, chain: List<Middleware<S>>) = nextIndex == chain.size
 }
 
 

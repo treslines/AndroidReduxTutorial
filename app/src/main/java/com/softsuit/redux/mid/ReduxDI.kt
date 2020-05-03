@@ -4,10 +4,10 @@ package com.softsuit.redux.mid
  *  Everytime you implement a new middleware, that's the place to update it by adding it to the list.
  * */
 object DI {
-    private val middles: List<Middleware<AppState>> = listOf(SearchApiMiddleware(), DebugMiddleware())
-    private val internalState = AppState("App Internal State")
-    private val appStateTree = AppState("Initial State", internalState)
-    val reduxStore = AppStore(initialState = appStateTree, middles = middles)
+    private val middlewareChain: List<Middleware<AppState>> = listOf(SearchApiMiddleware(), DebugMiddleware())
+    private val internalState = AppState("Internal App State")
+    private val appStateTree = AppState("Redux Tutorial App", internalState)
+    val reduxStore = AppStore(initialState = appStateTree, chain = middlewareChain)
 }
 
 

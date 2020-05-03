@@ -93,12 +93,12 @@ class SearchingAction(private val eventDescription: String) : Action<AppState> {
     }
 }
 
-class SearchResultAction(private val eventDescription: String, private val resultData: String) : Action<AppState> {
+class SearchResultAction(private val eventDescription: String, private val keywordToSearchFor: String) : Action<AppState> {
 
     override fun reduce(old: AppState): AppState {
-        // simulating long search process
+        // simulating long search process in database
         Thread.sleep(1000 * 5)
-        old.data["SearchResultState"] = resultData
+        old.data["SearchResultState"] = keywordToSearchFor // imagine: here would be the real result
         return AppState(description = "SearchResultState", internal = SearchResultState(), data = LinkedHashMap(old.data))
     }
 
@@ -142,12 +142,13 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
+        val stateName = it.internal!!::class.java.simpleName
         when (it.internal) {
-            is DecrementCounterState -> {
-                Log.d("debugging", it.data["CounterState"].toString())
-            }
+            is ResetCounterState -> Log.d(stateName, it.data["CounterState"].toString())
+            is IncrementCounterState -> Log.d(stateName, it.data["CounterState"].toString())
+            is DecrementCounterState -> Log.d(stateName, it.data["CounterState"].toString())
+            else -> Log.d(stateName, it.data[stateName].toString())
         }
-        it.data["DebugState"] = true
         AppState(description, DebugState(), LinkedHashMap(it.data))
     }
 

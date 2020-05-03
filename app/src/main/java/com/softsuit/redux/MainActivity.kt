@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
 
         // 1. register any component interested into counter state changes
         reduxStore.subscribe {
+            // Important: subscribers are dumb and should only assign already computed state values
             when (it.internal) {
                 is ResetCounterState -> xIdTxtCounter.text = "0"
                 is IncrementCounterState -> xIdTxtCounter.text = it.data["CounterState"].toString()
@@ -30,10 +31,14 @@ class MainActivity : AppCompatActivity() {
         // 3. register for SearchResultState
         reduxStore.subscribe {
             when (it.internal) {
-                is SearchResultState -> {
-                    val s = reduxStore.getAppState()
-                    Toast.makeText(this, "App description: " + s.description + " -> data: " + s.data["SearchResultState"], Toast.LENGTH_LONG).show()
-                }
+                is SearchResultState ->
+                    runOnUiThread {
+                        Toast.makeText(
+                            this,
+                            "SearchResultState: ${it.data["SearchResultState"]}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
             }
         }
 
