@@ -1,7 +1,29 @@
-# Android Redux - Get Started Tutorial - Minimalistic Guide! (Classic Web Implementation and Object Oriented)
-Sample / example android redux kotlin implementation / tutorial as a get started guide 
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
+# Android Redux - Get Started Tutorial - Minimalistic Guide! (Classic Web and OO-Implementation)
+A complete implementation of redux for android apps using kotlin and including middlewares. 
+___
 ## :dart: Without third party library, just plain kotlin!
+___
+# What are you going to learn and see?
+1. You'll learn the redux core concepts step by step without worring about other things
+2. You'll see a plain kotlin OO redux implementation without third party libraries
+3. You'll step thru all redux components one by one where I point out what happens in each class
+4. You'll see how middlewares could be integrated and how they was tought to handle async tasks (side effects)
+5. You'll understand how components can subscribe to state changes  
+6. At the end while cloning this project, you should get the app as shown bellow:
 
+![alt text](https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/reduxtutorial.jpg "Redux Tutorial App")
+___
+# Why shall i use the OO-Version?
+Well, the questions is not if you should use it or not. **It is much more the question:** 
+
+> *Is there a way to design my redux code in such a way, that my code complains with the Open-Close-Principle (OCP)?* 
+
+If you take a look at this simple but very often used web-implementation bellow, at bullet 3. you'll see that every reducer has to switch-case actions in order to perform the right action. What does it means for us in terms of code enhancement, maintenance and changes? Imagine, every time you implement a new action, you'll need to touch the reducers including a new switch-case to it. This may cause side effects, than you would be touching/changing already running, tested code. Another problem i see by implementing like in bullet 3.1 is that you'll also going to touch/change this action group. Again that's not open-closed. (i know this example was designed for the web and there this may be good, but since i am targeting android apps which does support oo-design, that's why i am trying to archieve the same result using the redux-core concepts but adapting it to conform to OCP)
+
+:dart: It just a private initative aiming to get better enhanceable, maintainable code. My main goal with this project is to find out how easy or complex it is to implement and use redux in android apps and to see if it really has this huge benefit everybody is talking about or just adds more boilerplates and unnecessary complexity to it. **So stay tunned! :octocat: and give it a star :sparkles:!**
+
+___
 ### Core redux
 Basic redux pattern definitions.
 
@@ -20,15 +42,13 @@ interface Store <S: State> {
     fun getCurrentState(): S
 }
 ```
-### Generic store implementation
+### Generic store implementation (here without middleware just for show case)
 A sample, generic store implementation to be used everywhere in your app.
 
 ```kotlin
 // 2. default store implementation to be used everywhere in your app - implemented ONCE!
 class DefaultStore <S: State>(initialState: S,private val reducer: Reducer<S>): Store<S> {
-
     private val subscribers = mutableSetOf<StoreSubscriber<S>>()
-
     private var currentState: S = initialState
         set(value) {
             field = value
@@ -40,19 +60,13 @@ class DefaultStore <S: State>(initialState: S,private val reducer: Reducer<S>): 
     }
 
     override fun subscribe(subscriber: StoreSubscriber<S>) = subscribers.add(element = subscriber)
-
     override fun unsubscribe(subscriber: StoreSubscriber<S>) = subscribers.remove(element = subscriber)
-
     override fun getCurrentState(): S = currentState
 }
 
-// 3. implement the entities for our needs - see ReduxCounter.kt as a sample implementation
-//    for every new reducer implementation a new .kt file is created like ReduxCounter.kt
+// 3. implement the entities for our needs - see code bellow
 
-
-// 4. use store in our app over dependency injection (central place of definition)
-//    new line is added, every time a new store is created. Single point of definition (lookup)
-//    for better maintenance and faster learning process by new developers.
+// 4. use store in our app over dependency injection
 object DI {
     val counterStore = DefaultStore(initialState = CounterState(), reducer = CounterStateReducer)
     // define other stores here as soon as they are defined and needed ...
@@ -84,3 +98,24 @@ val CounterStateReducer: Reducer<CounterState> = { old, action ->
     }
 }
 ```
+
+# Contributions:
+  - Fork the project, implement your contribution, make a pull request
+
+## License:
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
+- **[MIT license](http://opensource.org/licenses/mit-license.php)**
+- Copyright 2018 © Ricardo Ferreira
+
+## Author:
+<pre>
+<b>Ricardo Ferreira</b>
+Software Engineer at SopraSteria <a href="https://www.soprasteria.com/">https://www.soprasteria.com/</a>
+Instagram: ricardo7307
+Twitter: ricardo_7307
+Other projects you may like also: 
+- Natural UML <a href="https://treslines.github.io/">Create UML, Use Case or State Diagrams Online For Free!</a> 
+- Orchid Password App <a href="https://play.google.com/store/apps/details?id=com.softsuit.orchid">Offline password manger resistant to quantum computing attacks!</a> 👊
+- Codegramm - Needs Driven Development <a href="http://codegramm.herokuapp.com/">Tired to figure out adequate design patterns for your app? Try codegramm. It is free!</a> 
+- Tech-Blog <a href="http://www.cleancodedevelopment-qualityseal.blogspot.com.br">http://www.cleancodedevelopment-qualityseal.blogspot.com.br</a>
+</pre>
