@@ -7,18 +7,18 @@ package com.softsuit.redux.mid
  * perfectly here in one clear, single file.
  */
 
-// UI-Actions
+// UI-Actions: For each action, there is its corresponding state
 class IncrementCounterState : AppState(description = "Increment Counter State")
 class DecrementCounterState : AppState(description = "Decrement Counter State")
 class ResetCounterState : AppState(description = "Reset Counter State")
 
-// Search Middleware Actions
+// Search Middleware Actions: For each action, there is its corresponding state
 class SearchResultState : AppState(description = "Search Result State")
 class SearchingState : AppState(description = "Searching State")
 class SearchForKeywordState : AppState(description = "Search For Keyword State")
 class WaitingForUserInputState : AppState(description = "Waiting For User Input State")
 
-// Debug-Development actions
+// Debug-Development actions: For each action, there is its corresponding state
 class DebugState : AppState(description = "Debug State")
 
 
