@@ -1,8 +1,7 @@
 [![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
 # Android Redux - Get Started Tutorial - Minimalistic Guide! (Classic Web and OO-Implementation)
-A complete implementation of redux for android apps using kotlin and including middlewares. 
 ___
-## :dart: Without third party library, just plain kotlin!
+:dart: A complete implementation of redux for android apps using kotlin and including middlewares. No third party library, just plain kotlin!
 ___
 
 # Pros - Cons - Challanges - Good to Know
