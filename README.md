@@ -4,6 +4,24 @@ A complete implementation of redux for android apps using kotlin and including m
 ___
 ## :dart: Without third party library, just plain kotlin!
 ___
+
+# Pros - Cons - Challanges - Good to Know
+### Pros
+- The app is still to small and it is too soon to judge anything at the moment, although i could imagine the benefits (so lets wait till this project grows - i am planing to implement a full payment flow to see how it feels)
+- The idea of subscription and just value assignments in the views is very nice. The store is available everywhere which is also nice.
+
+### Cons
+- What I found annoying was this copying job that you will have to do every time an action is triggered to create a new state and not mofify the old(current one)
+- There is a huge extra boilerplate of states and actions. And i fear that this is going to increase a lot later on 
+- Things get complicated very fast the more attributes you have for each state and if middlewares create new actions, perform some side effects etc. you may run very fest into stack over flows. (endless loops)
+
+### Challanges
+- The most important and impactful part to me today (03.05.2020) is to find a way to keep states as flat as possible and to maintain things manageable and easy understandable. I fear huge business logic problems there. So the way i probably would handle it, would be to create business logic resolvers/reducers for every state group(imagining that a complex state may have a lot of variables, constraints etc.) But lets wait for the next chapters of this story.
+
+### Good to Know
+- What i saw so far is that you must have a good understanding of redux to do things right (there is a learn curve)
+- This new way of functional thinking takes a while till you really understand its power and simplicity (but it's worth)
+
 # What are you going to learn and see?
 1. You'll learn the redux core concepts step by step without worring about other things
 2. You'll see a plain kotlin OO redux implementation without third party libraries
@@ -22,6 +40,10 @@ Well, the question is not if you should use it or not. **It is much more about t
 If you take a look at this simple but very often used web-implementation bellow, at bullet 3. you'll see that every reducer has to switch-case actions in order to perform the right action. What does it means for us in terms of code enhancement, maintenance and changes? Imagine, every time you implement a new action, you'll need to touch the reducers including a new switch-case to it. This may cause side effects, than you would be touching/changing already running, tested code. Another problem i see by implementing like in bullet 3.1 is that you'll also going to touch/change this action group. Again that's not open-closed. (i know this example was designed for the web and there this may be good, but since i am targeting android apps which does support oo-design, that's why i am trying to archieve the same result using the redux-core concepts but adapting it to conform to OCP)
 
 :dart: It just a private initative aiming to get better enhanceable, maintainable code. My main goal with this project is to find out how easy or complex it is to implement and use redux in android apps and to see if it really has this huge benefit everybody is talking about or just adds more boilerplates and unnecessary complexity to it. **So stay tunned! :octocat: and give it a star :sparkles:!**
+
+The project root is very simplistic and there you are gonna find a structure like this bellow, where in **web** folder you'll find a web sample implementation of redux (that's where i got inpired from), in **oo** folder the object oriented implementation without middleware and in **mid** folder you are gonna find the complete middleware, object oriented implementation, which is used in the main activity. 
+
+![alt text](https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/project.jpg "Redux Tutorial Project")
 
 ___
 ### Core redux
