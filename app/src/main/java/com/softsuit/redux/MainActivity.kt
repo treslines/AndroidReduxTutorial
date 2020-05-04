@@ -19,9 +19,7 @@ class MainActivity : AppCompatActivity() {
         reduxStore.subscribe {
             // Important: subscribers are dumb and should only assign already computed state values
             when (it.internal) {
-                is ResetCounterState -> xIdTxtCounter.text = "0"
-                is IncrementCounterState -> xIdTxtCounter.text = it.data["CounterState"].toString()
-                is DecrementCounterState -> xIdTxtCounter.text = it.data["CounterState"].toString()
+                is CounterState -> xIdTxtCounter.text = it.data["CounterState"].toString()
             }
         }
 

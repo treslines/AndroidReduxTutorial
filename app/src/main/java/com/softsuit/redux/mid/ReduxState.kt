@@ -8,9 +8,7 @@ package com.softsuit.redux.mid
  */
 
 // UI-Actions: For each action, there is its corresponding state
-class IncrementCounterState : AppState(description = "Increment Counter State")
-class DecrementCounterState : AppState(description = "Decrement Counter State")
-class ResetCounterState : AppState(description = "Reset Counter State")
+class CounterState : AppState(description = "Counter State")
 
 // Search Middleware Actions: For each action, there is its corresponding state
 class SearchResultState : AppState(description = "Search Result State")

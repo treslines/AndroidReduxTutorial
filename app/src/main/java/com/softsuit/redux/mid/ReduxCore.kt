@@ -78,15 +78,15 @@ interface Middleware<S : State> {
     fun next(
         state: S,
         action: Action<S>,
-        middles: List<Middleware<S>>,
-        middleIndex: Int,
+        chain: List<Middleware<S>>,
+        chainIndex: Int,
         store: AppStore<S>
     ) {
-        val nextIndex = middleIndex + 1
-        if (isEndOfChain(nextIndex, middles)) {
+        val nextIndex = chainIndex + 1
+        if (isEndOfChain(nextIndex, chain)) {
             store.reduce(action)
         } else {
-            middles[nextIndex].apply(state, action, middles, nextIndex, store)
+            chain[nextIndex].apply(state, action, chain, nextIndex, store)
         }
     }
 

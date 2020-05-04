@@ -15,7 +15,7 @@ import android.util.Log
 class ResetCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
         old.data["CounterState"] = 0
-        return AppState(description = "ResetCounterState", internal = ResetCounterState(), data = LinkedHashMap(old.data))
+        return AppState(description = "ResetCounterState", internal = CounterState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -38,7 +38,7 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
             }
         }
 
-        return AppState(description = "DecrementCounterState", internal = DecrementCounterState(), data = LinkedHashMap(old.data))
+        return AppState(description = "DecrementCounterState", internal = CounterState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -62,7 +62,7 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
             }
         }
 
-        AppState(description = "IncrementCounterState", internal = IncrementCounterState(), data = LinkedHashMap(it.data))
+        AppState(description = "IncrementCounterState", internal = CounterState(), data = LinkedHashMap(it.data))
     }
 
     // reducer result assigned to the method as return type
@@ -143,12 +143,7 @@ class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
         val stateName = it.internal!!::class.java.simpleName
-        when (it.internal) {
-            is ResetCounterState -> Log.d(stateName, it.data["CounterState"].toString())
-            is IncrementCounterState -> Log.d(stateName, it.data["CounterState"].toString())
-            is DecrementCounterState -> Log.d(stateName, it.data["CounterState"].toString())
-            else -> Log.d(stateName, it.data[stateName].toString())
-        }
+        Log.d(stateName, it.data[stateName].toString())
         AppState(description, DebugState(), LinkedHashMap(it.data))
     }
 
