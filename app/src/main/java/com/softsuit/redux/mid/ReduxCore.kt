@@ -16,7 +16,6 @@ interface Action<S : State> {
 interface SimpleStateObserver<S : State> {
     /** state you are registering for */
     fun observe(): S
-
     /** place where the android component react to change */
     fun onChange(state: S)
 }
@@ -25,7 +24,6 @@ interface SimpleStateObserver<S : State> {
 interface MultiStateObserver<S : State> {
     /** states you are registering for */
     fun observe(): List<S>
-
     /** place where the android component reacts to change */
     fun onChange(state: S)
 }
@@ -37,16 +35,11 @@ typealias ConditionReducer <T> = (T) -> Boolean
 interface ConditionalStateObserver<S : State> {
     /** any condition you want to match besides state change. Property, name, id, string whatever you need */
     fun match(): ConditionReducer<S>
-
     /** state you are registering for */
     fun observe(): S
-
     /** place where the android component reacts to change */
     fun onChange(state: S)
 }
-
-/** pure function. any android component that wants to get notified if a specific state changes. */
-typealias Subscriber <T> = (T) -> Unit
 
 /** store implements this contract. */
 interface Store<S : State> {
@@ -71,8 +64,6 @@ open class AppState(open var description: String, var internal: AppState? = null
 class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
 
     /** android component subscriptions. */
-    private val subscribers = mutableSetOf<Subscriber<S>>()
-
     private val conditionalStateObservers = mutableSetOf<ConditionalStateObserver<S>>()
     private val simpleStateObservers = mutableSetOf<SimpleStateObserver<S>>()
     private val multiStateObservers = mutableSetOf<MultiStateObserver<S>>()
@@ -102,10 +93,11 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 }
 
                 // notify observers that match one of the states
-                multiStateObservers.forEach { outter ->
-                    outter.observe().forEach { inner ->
+                multiStateObservers.forEach { outer ->
+                    for (inner in outer.observe()) {
                         if (inner::class.java.simpleName == newState.internal!!::class.java.simpleName) {
-                            outter.onChange(newState)
+                            outer.onChange(newState)
+                            break
                         }
                     }
                 }
