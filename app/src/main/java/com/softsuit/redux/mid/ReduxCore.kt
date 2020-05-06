@@ -34,7 +34,9 @@ class AppStore<S : State>(initialState: S, private val chain: List<Middleware<S>
 
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
-        set(newState) {
+        // state change happens most of the time sequentially.
+        // Synchronized just to be aware of middleware
+        @Synchronized set(newState) {
             if (appState != newState) {
                 field = newState
                 // this is where the notification happens
