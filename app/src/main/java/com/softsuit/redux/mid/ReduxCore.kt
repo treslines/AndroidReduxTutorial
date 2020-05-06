@@ -3,30 +3,47 @@ package com.softsuit.redux.mid
 /** state as a marker interface to enforce contract. */
 interface State
 
+/** pure function. used in conjunction(or not) with actions and subscribers reducing the state. */
+typealias Reducer <T> = (T) -> T
+
 /** every action implements this contract. it know how to reduce itself. */
 interface Action<S : State> {
+    /** place where android components places its reducers */
     fun reduce(old: S): S
 }
 
-interface SingleStateObserver<T, S> {
-    fun triggerProperty(): T
-    fun triggerState(): S
-    fun stateChanged(state: S)
+/** Registration for components interested simply on a state change */
+interface SimpleStateObserver<S : State> {
+    /** state you are registering for */
+    fun observe(): S
+
+    /** place where the android component react to change */
+    fun onChange(state: S)
 }
 
-interface MultiStateObserver<T, S> {
-    fun triggerStates(): List<S>
-    fun stateChanged(state: S)
+/** for components interested in one or more state changes. If one OR another state changes, it gets notified */
+interface MultiStateObserver<S : State> {
+    /** states you are registering for */
+    fun observe(): List<S>
+
+    /** place where the android component reacts to change */
+    fun onChange(state: S)
 }
 
-interface StatePropertyObserver<S> {
-    fun triggerProperty(): Any
-    fun triggerState(): S
-    fun stateChanged(state: S)
-}
+/** used while registering conditonal obersers */
+typealias ConditionReducer <T> = (T) -> Boolean
 
-/** pure function. used in conjunction(or not) with actions and subscribers reducing the state. */
-typealias Reducer <T> = (T) -> T
+/** for components interested in one specific state change and any condition of it. The state must match AND the property name */
+interface ConditionalStateObserver<S : State> {
+    /** any condition you want to match besides state change. Property, name, id, string whatever you need */
+    fun match(): ConditionReducer<S>
+
+    /** state you are registering for */
+    fun observe(): S
+
+    /** place where the android component reacts to change */
+    fun onChange(state: S)
+}
 
 /** pure function. any android component that wants to get notified if a specific state changes. */
 typealias Subscriber <T> = (T) -> Unit
@@ -35,8 +52,15 @@ typealias Subscriber <T> = (T) -> Unit
 interface Store<S : State> {
     fun reduce(action: Action<S>): S
     fun dispatch(action: Action<S>)
-    fun subscribe(subscriber: Subscriber<S>): Boolean
-    fun unsubscribe(subscriber: Subscriber<S>): Boolean
+
+    fun addMultiStateObserver(observer: MultiStateObserver<S>): Boolean
+    fun addSimpleStateObserver(observer: SimpleStateObserver<S>): Boolean
+    fun addConditionalStateObserver(observer: ConditionalStateObserver<S>): Boolean
+
+    fun removeMultiStateObserver(observer: MultiStateObserver<S>): Boolean
+    fun removeSimpleStateObserver(observer: SimpleStateObserver<S>): Boolean
+    fun removeConditionalStateObserver(observer: ConditionalStateObserver<S>): Boolean
+
     fun getAppState(): S
 }
 
@@ -49,7 +73,9 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     /** android component subscriptions. */
     private val subscribers = mutableSetOf<Subscriber<S>>()
 
-    private val observers = mutableSetOf<StatePropertyObserver<S>>()
+    private val conditionalStateObservers = mutableSetOf<ConditionalStateObserver<S>>()
+    private val simpleStateObservers = mutableSetOf<SimpleStateObserver<S>>()
+    private val multiStateObservers = mutableSetOf<MultiStateObserver<S>>()
 
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
@@ -59,20 +85,31 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             if (appState != newState) {
                 field = newState
 
-                // this is where the notification happens
-                subscribers.forEach { it(newState) }
-
-                // notify only observers that match the state and property
-                observers.forEach {
-                    if (newState == it.triggerState()) {
-                        if (it.triggerProperty() == newState.internal?.data?.get(it.triggerProperty()) ?: false) {
-                            it.stateChanged(newState)
+                // notify only observers that match the state and condition
+                conditionalStateObservers.forEach {
+                    if (newState::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        if (it.match().invoke(newState)) {
+                            it.onChange(newState)
                         }
                     }
                 }
 
-                // notify only obersers interested in one or more states
-                // TODO
+                // notify only observers that match the state
+                simpleStateObservers.forEach {
+                    if (newState::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        it.onChange(newState)
+                    }
+                }
+
+                // notify observers that match one of the states
+                multiStateObservers.forEach { outter ->
+                    outter.observe().forEach { inner ->
+                        if (inner::class.java.simpleName == newState::class.java.simpleName) {
+                            outter.onChange(newState)
+                        }
+                    }
+                }
+
             }
         }
 
@@ -82,22 +119,24 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         return appState
     }
 
-    public fun addObserver(observer: StatePropertyObserver<S>) = observers.add(element = observer)
-
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
     override fun dispatch(action: Action<S>) = applyMiddleware(action)
-
-    /** way android components subscribe to a state they are interested in */
-    override fun subscribe(subscriber: Subscriber<S>) = subscribers.add(element = subscriber)
-
-    /** whenever a component wants to unsubscribe */
-    override fun unsubscribe(subscriber: Subscriber<S>) = subscribers.remove(element = subscriber)
 
     /** the app's current state tree */
     override fun getAppState() = appState
 
     /** whenever dispatch is called, all registered middlewares get the chance to react to actions */
     private fun applyMiddleware(action: Action<S>) = chain[0].apply(appState, action, chain, 0, this)
+
+    /** way android components subscribe to a state they are interested in */
+    override fun addMultiStateObserver(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
+    override fun addSimpleStateObserver(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
+    override fun addConditionalStateObserver(observer: ConditionalStateObserver<S>) = conditionalStateObservers.add(element = observer)
+
+    /** whenever a component wants to unsubscribe */
+    override fun removeMultiStateObserver(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
+    override fun removeSimpleStateObserver(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
+    override fun removeConditionalStateObserver(observer: ConditionalStateObserver<S>) = conditionalStateObservers.remove(element = observer)
 }
 
 /**

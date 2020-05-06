@@ -16,47 +16,63 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // 1. register any component interested into counter state changes
-        reduxStore.subscribe {
-            // Important: subscribers are dumb and should only assign already computed state values
-            when (it.internal) {
-                is CounterState -> xIdTxtCounter.text = it.data["CounterState"].toString()
+        val aSimpleCounterStateObserver = object : SimpleStateObserver<AppState> {
+            override fun observe() = CounterState()
+            override fun onChange(state: AppState) {
+                xIdTxtCounter.text = state.data["CounterState"].toString()
             }
         }
+        reduxStore.addSimpleStateObserver(aSimpleCounterStateObserver)
 
         // 2. dispatch reset counter action
         reduxStore.dispatch(ResetCounterAction("Reset Counter Event"))
 
         // 3. register for SearchResultState
-        reduxStore.subscribe {
-            when (it.internal) {
-                is SearchResultState ->
-                    runOnUiThread {
-                        Toast.makeText(
-                            this,
-                            "SearchResultState: ${it.data["SearchResultState"]}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+        val aSimpleSearchResultStateObserver = object : SimpleStateObserver<AppState> {
+            override fun observe() = SearchResultState()
+            override fun onChange(state: AppState) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "SearchResultState: ${state.data["SearchResultState"]}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
+        reduxStore.addSimpleStateObserver(aSimpleSearchResultStateObserver)
 
-        val aObservable = object : StatePropertyObserver<CounterState> {
-            override fun triggerProperty() = "Settings"
-            override fun triggerState() = CounterState()
-            override fun stateChanged(state: CounterState) {
+        // 4. Register a conditional state
+        val aCondition: ConditionReducer<AppState> = { it.data["CounterState"] == 2 }
+        val aConditionalCounterStateObserver = object : ConditionalStateObserver<AppState> {
+            override fun match() = aCondition
+            override fun observe() = CounterState()
+            override fun onChange(state: AppState) {
                 xIdTxtCounter.text = state.data["CounterState"].toString()
             }
         }
-        //reduxStore.addObserver(observer = aObservable)
+        reduxStore.addConditionalStateObserver(observer = aConditionalCounterStateObserver)
 
+        // 5. Register a multi state
+        val aMultiStateObserver = object : MultiStateObserver<AppState> {
+            override fun observe() = listOf(SearchingState(), DebugState())
+            override fun onChange(state: AppState) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Result: ${state.internal!!::class.java.simpleName}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+        reduxStore.addMultiStateObserver(observer = aMultiStateObserver)
 
     }
 
-    // 4. dispatch actions on user input
+    // 6. dispatch actions on user input
     fun decrement(view: View) = reduxStore.reduce(DecrementCounterAction("Decrement Counter Event"))
     fun increment(view: View) = reduxStore.reduce(IncrementCounterAction("Increment Counter Event"))
 
-    // 5. dispatch middleware action on user input
+    // 7. dispatch middleware action on user input
     fun search(view: View) = reduxStore.dispatch(SearchingAction("Searching Event"))
     fun debug(view: View) = reduxStore.dispatch(DebugAction())
 }
