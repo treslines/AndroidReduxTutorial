@@ -87,7 +87,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
                 // notify only observers that match the state and condition
                 conditionalStateObservers.forEach {
-                    if (newState::class.java.simpleName == it.observe()::class.java.simpleName) {
+                    if (newState.internal!!::class.java.simpleName == it.observe()::class.java.simpleName) {
                         if (it.match().invoke(newState)) {
                             it.onChange(newState)
                         }
@@ -96,7 +96,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
                 // notify only observers that match the state
                 simpleStateObservers.forEach {
-                    if (newState::class.java.simpleName == it.observe()::class.java.simpleName) {
+                    if (newState.internal!!::class.java.simpleName == it.observe()::class.java.simpleName) {
                         it.onChange(newState)
                     }
                 }
@@ -104,7 +104,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 // notify observers that match one of the states
                 multiStateObservers.forEach { outter ->
                     outter.observe().forEach { inner ->
-                        if (inner::class.java.simpleName == newState::class.java.simpleName) {
+                        if (inner::class.java.simpleName == newState.internal!!::class.java.simpleName) {
                             outter.onChange(newState)
                         }
                     }

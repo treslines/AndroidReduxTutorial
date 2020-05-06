@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(
                         this@MainActivity,
                         "SearchResultState: ${state.data["SearchResultState"]}",
-                        Toast.LENGTH_LONG
+                        Toast.LENGTH_SHORT
                     ).show()
                 }
             }
@@ -43,25 +43,33 @@ class MainActivity : AppCompatActivity() {
         reduxStore.addSimpleStateObserver(aSimpleSearchResultStateObserver)
 
         // 4. Register a conditional state
-        val aCondition: ConditionReducer<AppState> = { it.data["CounterState"] == 2 }
+        val aCondition: ConditionReducer<AppState> = {
+            it.data["CounterState"] == 2
+        }
         val aConditionalCounterStateObserver = object : ConditionalStateObserver<AppState> {
             override fun match() = aCondition
             override fun observe() = CounterState()
             override fun onChange(state: AppState) {
-                xIdTxtCounter.text = state.data["CounterState"].toString()
+                Toast.makeText(
+                    this@MainActivity,
+                    "CounterState: ${state.data["CounterState"]}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
         reduxStore.addConditionalStateObserver(observer = aConditionalCounterStateObserver)
 
         // 5. Register a multi state
         val aMultiStateObserver = object : MultiStateObserver<AppState> {
-            override fun observe() = listOf(SearchingState(), DebugState())
+            override fun observe() = listOf(SearchForKeywordState(), SearchResultState())
             override fun onChange(state: AppState) {
-                Toast.makeText(
-                    this@MainActivity,
-                    "Result: ${state.internal!!::class.java.simpleName}",
-                    Toast.LENGTH_LONG
-                ).show()
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Result: ${state.internal!!::class.java.simpleName}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
         reduxStore.addMultiStateObserver(observer = aMultiStateObserver)
