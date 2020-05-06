@@ -15,12 +15,12 @@ Redux in action in a simple flow
   <img src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/usage.png">
 </p>
 
-## Usage
+## UML Diagram
 Desing and class diagram with comments
 <p align="center">
   <img src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/redux.png">
 </p>
-___
+
 
 # Pros - Cons - Challanges - Good to Know
 ### Pros
