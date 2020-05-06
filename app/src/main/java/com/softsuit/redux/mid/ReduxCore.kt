@@ -8,6 +8,23 @@ interface Action<S : State> {
     fun reduce(old: S): S
 }
 
+interface SingleStateObserver<T, S> {
+    fun triggerProperty(): T
+    fun triggerState(): S
+    fun stateChanged(state: S)
+}
+
+interface MultiStateObserver<T, S> {
+    fun triggerStates(): List<S>
+    fun stateChanged(state: S)
+}
+
+interface StatePropertyObserver<S> {
+    fun triggerProperty(): Any
+    fun triggerState(): S
+    fun stateChanged(state: S)
+}
+
 /** pure function. used in conjunction(or not) with actions and subscribers reducing the state. */
 typealias Reducer <T> = (T) -> T
 
@@ -27,10 +44,12 @@ interface Store<S : State> {
 open class AppState(open var description: String, var internal: AppState? = null, var data: MutableMap<String, Any> = mutableMapOf()) : State
 
 /** represents the single source of truth in your andorid app. */
-class AppStore<S : State>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
+class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
 
     /** android component subscriptions. */
     private val subscribers = mutableSetOf<Subscriber<S>>()
+
+    private val observers = mutableSetOf<StatePropertyObserver<S>>()
 
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
@@ -39,8 +58,21 @@ class AppStore<S : State>(initialState: S, private val chain: List<Middleware<S>
         @Synchronized set(newState) {
             if (appState != newState) {
                 field = newState
+
                 // this is where the notification happens
                 subscribers.forEach { it(newState) }
+
+                // notify only observers that match the state and property
+                observers.forEach {
+                    if (newState == it.triggerState()) {
+                        if (it.triggerProperty() == newState.internal?.data?.get(it.triggerProperty()) ?: false) {
+                            it.stateChanged(newState)
+                        }
+                    }
+                }
+
+                // notify only obersers interested in one or more states
+                // TODO
             }
         }
 
@@ -49,6 +81,8 @@ class AppStore<S : State>(initialState: S, private val chain: List<Middleware<S>
         appState = action.reduce(appState)
         return appState
     }
+
+    public fun addObserver(observer: StatePropertyObserver<S>) = observers.add(element = observer)
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
     override fun dispatch(action: Action<S>) = applyMiddleware(action)
@@ -72,7 +106,7 @@ class AppStore<S : State>(initialState: S, private val chain: List<Middleware<S>
  * to the next middleware in the chain or simply pass it over to the store. Middlewares are
  * triggered over the dispatch() method in the store only. Single point of entrance.
  */
-interface Middleware<S : State> {
+interface Middleware<S : AppState> {
     /**
      * Call this method inside you middleware implementation whenever you
      * think that it makes sense. It is totally up to your business logic

@@ -40,6 +40,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        val aObservable = object : StatePropertyObserver<CounterState> {
+            override fun triggerProperty() = "Settings"
+            override fun triggerState() = CounterState()
+            override fun stateChanged(state: CounterState) {
+                xIdTxtCounter.text = state.data["CounterState"].toString()
+            }
+        }
+        //reduxStore.addObserver(observer = aObservable)
+
+
     }
 
     // 4. dispatch actions on user input
