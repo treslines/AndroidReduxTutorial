@@ -3,10 +3,23 @@
 ___
 :dart: A complete implementation of redux for android apps using kotlin and including middlewares. No third party library, just plain kotlin!
 
+## Overview Core Concept
+Redux core concept and components
+<p align="center">
+  <img src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/overview.png">
+</p>
+
+## Usage
+Redux in action in a simple flow
+<p align="center">
+  <img src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/usage.png">
+</p>
+
+## Usage
+Desing and class diagram with comments
 <p align="center">
   <img src="https://github.com/treslines/AndroidReduxTutorial/blob/master/app/src/main/res/drawable/redux.png">
 </p>
-
 ___
 
 # Pros - Cons - Challanges - Good to Know
