@@ -16,6 +16,7 @@ interface Action<S : State> {
 interface SimpleStateObserver<S : State> {
     /** state you are registering for */
     fun observe(): S
+
     /** place where the android component react to change */
     fun onChange(state: S)
 }
@@ -24,6 +25,7 @@ interface SimpleStateObserver<S : State> {
 interface MultiStateObserver<S : State> {
     /** states you are registering for */
     fun observe(): List<S>
+
     /** place where the android component reacts to change */
     fun onChange(state: S)
 }
@@ -35,8 +37,10 @@ typealias ConditionReducer <T> = (T) -> Boolean
 interface ConditionalStateObserver<S : State> {
     /** any condition you want to match besides state change. Property, name, id, string whatever you need */
     fun match(): ConditionReducer<S>
+
     /** state you are registering for */
     fun observe(): S
+
     /** place where the android component reacts to change */
     fun onChange(state: S)
 }
@@ -55,6 +59,7 @@ interface Store<S : State> {
     fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>): Boolean
 
     fun getAppState(): S
+    fun lookUpFor(state: S): S
     fun getDeepCopy(original: S): S
 }
 
@@ -62,8 +67,14 @@ interface Store<S : State> {
 open class AppState(
     var id: String,
     var data: MutableMap<String, Any> = mutableMapOf(),
-    var child: AppState? = null
+    var child: AppState? = null,
+    var hasChild: Boolean = false,
+    var isRoot: Boolean = false,
+    var hasData: Boolean = data.isNotEmpty()
 ) : State
+
+/** state returned by lookUpForState() if not match found */
+class EmptyState() : AppState(id = "empty")
 
 /** represents the single source of truth in your andorid app. */
 class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
@@ -142,8 +153,37 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // this method is one of the most powerful method in the redux concept of immutability.
         // it avoids wrong usage by programmers and critical, unexpected side effects besides
         // better usability while reducing states. You do not have to worry about copying them anymore.
-        // TODO copy original state
-        return original
+        val deepCopy = EmptyState()
+        copyDeep(appState, deepCopy as S)
+        return deepCopy
+    }
+
+    private fun copyDeep(original: S, copy: S) {
+        copy.id = original.id
+        copy.isRoot = original.isRoot
+        copy.hasChild = original.hasChild
+        if (original.hasData) {
+            val data = mutableMapOf<String, Any>()
+            original.data.forEach { data[it.key] = it.value }
+            copy.data = data
+        }
+        if (original.hasChild) {
+            copy.child = EmptyState()
+            copyDeep(original.child as S, copy.child as S)
+        }
+    }
+
+    /** when your app depends on other state, lookup for it in the app state tree */
+    override fun lookUpFor(state: S): S {
+        return traverse(appState, state::class.java.simpleName)
+    }
+
+    private fun traverse(state: S, name: String): S {
+        return when {
+            state::class.java.simpleName == name -> getDeepCopy(state)
+            state.hasChild -> traverse(state.child as S, name)
+            else -> EmptyState() as S
+        }
     }
 }
 
