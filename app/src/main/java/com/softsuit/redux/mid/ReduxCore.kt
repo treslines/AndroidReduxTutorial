@@ -1,7 +1,5 @@
 package com.softsuit.redux.mid
 
-import android.util.Log
-
 /** state as a marker interface to enforce contract. */
 interface State
 
@@ -94,8 +92,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             if (appState != state) {
                 field = state
 
-                if (appState != null && appState.child != null) {
-                    // notify only observers that match the state and condition
+                // notify only observers that match the state and condition
                     conditionalStateObservers.forEach {
                         if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
                             // getDeepCopy() ensures immutability
@@ -123,20 +120,19 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                             }
                         }
                     }
-                } else {
-                    // shall never happen! you broke the store state! :)
-                    Log.i("ReduxCore", "AppState was set to null!")
-                }
 
             }
         }
 
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
-        // setter gets called here implicit but it will set the state only if it has changed
-        appState = getDeepCopy(action.reduce(getAppState()))
-        // ensure immutability
-        return getAppState()
+        val reduced = action.reduce(getAppState())
+        // prevent null AppState in case a reducer does something wrong (intentionally or not)
+        if (reduced?.child != null) {
+            // setter gets called here implicit but it will set the state only if it has changed
+            appState = getDeepCopy(reduced)
+        }
+        return reduced
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
