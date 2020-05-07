@@ -59,7 +59,11 @@ interface Store<S : State> {
 }
 
 /** the app's state tree. In this case only a description and its data. */
-open class AppState(var id: String, var data: MutableMap<String, Any> = mutableMapOf(), var child: AppState? = null) : State
+open class AppState(
+    var id: String,
+    var data: MutableMap<String, Any> = mutableMapOf(),
+    var child: AppState? = null
+) : State
 
 /** represents the single source of truth in your andorid app. */
 class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
@@ -81,8 +85,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 conditionalStateObservers.forEach {
                     if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
                         // getDeepCopy() ensures immutability
-                        if (it.match().invoke(getDeepCopy(appState))) {
-                            it.onChange(getDeepCopy(appState))
+                        if (it.match().invoke(getAppState())) {
+                            it.onChange(getAppState())
                         }
                     }
                 }
@@ -91,7 +95,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 simpleStateObservers.forEach {
                     if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
                         // getDeepCopy() ensures immutability
-                        it.onChange(getDeepCopy(appState))
+                        it.onChange(getAppState())
                     }
                 }
 
@@ -100,7 +104,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                     for (inner in outer.observe()) {
                         if (inner::class.java.simpleName == appState.child!!::class.java.simpleName) {
                             // getDeepCopy() ensures immutability
-                            outer.onChange(getDeepCopy(appState))
+                            outer.onChange(getAppState())
                             break // if matched, no need to keep running, go directly to next "outer" observer
                         }
                     }
@@ -112,19 +116,16 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
         // setter gets called here implicit but it will set the state only if it has changed
-        appState = getDeepCopy(action.reduce(getDeepCopy(appState)))
+        appState = getDeepCopy(action.reduce(getAppState()))
         // ensure immutability
-        return getDeepCopy(appState)
+        return getAppState()
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
-    override fun dispatch(action: Action<S>) = applyMiddleware(action)
+    override fun dispatch(action: Action<S>) = chain[0].apply(getAppState(), action, chain, 0, this)
 
     /** the app's current state tree */
     override fun getAppState() = getDeepCopy(appState)
-
-    /** whenever dispatch is called, all registered middlewares get the chance to react to actions */
-    private fun applyMiddleware(action: Action<S>) = chain[0].apply(appState, action, chain, 0, this)
 
     /** way android components subscribe to a state they are interested in */
     override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
