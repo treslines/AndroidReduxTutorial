@@ -15,7 +15,7 @@ import android.util.Log
 class ResetCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
         old.data["CounterState"] = 0
-        return AppState(description = "ResetCounterState", internal = CounterState(), data = LinkedHashMap(old.data))
+        return AppState(id = "ResetCounterState", child = CounterState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -30,15 +30,10 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
 
         when (old.data["CounterState"]) {
             null -> old.data["CounterState"] = 0.minus(1)
-            else -> {
-                if (old.data["CounterState"] == null) {
-                    old.data["CounterState"] = 0
-                }
-                old.data["CounterState"] = old.data["CounterState"].toString().toInt().minus(1)
-            }
+            else -> old.data["CounterState"] = old.data["CounterState"].toString().toInt().minus(1)
         }
 
-        return AppState(description = "DecrementCounterState", internal = CounterState(), data = LinkedHashMap(old.data))
+        return AppState(id = "DecrementCounterState", child = CounterState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -54,15 +49,10 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
 
         when (it.data["CounterState"]) {
             null -> it.data["CounterState"] = 0.plus(1)
-            else -> {
-                if (it.data["CounterState"] == null) {
-                    it.data["CounterState"] = 0
-                }
-                it.data["CounterState"] = it.data["CounterState"].toString().toInt().plus(1)
-            }
+            else -> it.data["CounterState"] = it.data["CounterState"].toString().toInt().plus(1)
         }
 
-        AppState(description = "IncrementCounterState", internal = CounterState(), data = LinkedHashMap(it.data))
+        AppState(id = "IncrementCounterState", child = CounterState(), data = LinkedHashMap(it.data))
     }
 
     // reducer result assigned to the method as return type
@@ -85,7 +75,7 @@ class SearchingAction(private val eventDescription: String) : Action<AppState> {
 
     override fun reduce(old: AppState): AppState {
         old.data["SearchingState"] = true
-        return AppState(description = "SearchingState", internal = SearchingState(), data = LinkedHashMap(old.data))
+        return AppState(id = "SearchingState", child = SearchingState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -99,7 +89,7 @@ class SearchResultAction(private val eventDescription: String, private val keywo
         // simulating long search process in database
         Thread.sleep(1000 * 5)
         old.data["SearchResultState"] = keywordToSearchFor // imagine: here would be the real result
-        return AppState(description = "SearchResultState", internal = SearchResultState(), data = LinkedHashMap(old.data))
+        return AppState(id = "SearchResultState", child = SearchResultState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -111,7 +101,7 @@ class SearchForKeywordAction(private val eventDescription: String, private val k
 
     override fun reduce(old: AppState): AppState {
         old.data["SearchForKeywordState"] = keyword
-        return AppState(description, SearchForKeywordState(), LinkedHashMap(old.data))
+        return AppState(id = description, child = SearchForKeywordState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -123,7 +113,7 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 
     override fun reduce(old: AppState): AppState {
         old.data["WaitingForUserInputState"] = true
-        return AppState(description = "WaitingForUserInputState", internal = WaitingForUserInputState(), data = LinkedHashMap(old.data))
+        return AppState(id = "WaitingForUserInputState", child = WaitingForUserInputState(), data = LinkedHashMap(old.data))
     }
 
     companion object Id {
@@ -142,9 +132,9 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
-        val stateName = it.internal!!::class.java.simpleName
+        val stateName = it.child!!::class.java.simpleName
         Log.d(stateName, it.data[stateName].toString())
-        AppState(description, DebugState(), LinkedHashMap(it.data))
+        AppState(id = description, child = DebugState(), data = LinkedHashMap(it.data))
     }
 
     override fun reduce(old: AppState) = reducer(old)
@@ -157,8 +147,8 @@ class DebugAction() : Action<AppState> {
 class LogAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
-        Log.d("logging", "AppData: ${it.description}")
-        Log.d("logging", "AppData>Internal: ${it.internal?.description}")
+        Log.d("logging", "AppData: ${it.id}")
+        Log.d("logging", "AppData>Internal: ${it.child?.id}")
         it
     }
 

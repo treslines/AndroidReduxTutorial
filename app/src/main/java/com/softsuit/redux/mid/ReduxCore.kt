@@ -46,19 +46,20 @@ interface Store<S : State> {
     fun reduce(action: Action<S>): S
     fun dispatch(action: Action<S>)
 
-    fun addMultiStateObserver(observer: MultiStateObserver<S>): Boolean
-    fun addSimpleStateObserver(observer: SimpleStateObserver<S>): Boolean
-    fun addConditionalStateObserver(observer: ConditionalStateObserver<S>): Boolean
+    fun subscribeMultiState(observer: MultiStateObserver<S>): Boolean
+    fun subscribeSimpleState(observer: SimpleStateObserver<S>): Boolean
+    fun subscribeConditionalState(observer: ConditionalStateObserver<S>): Boolean
 
-    fun removeMultiStateObserver(observer: MultiStateObserver<S>): Boolean
-    fun removeSimpleStateObserver(observer: SimpleStateObserver<S>): Boolean
-    fun removeConditionalStateObserver(observer: ConditionalStateObserver<S>): Boolean
+    fun unsubscribeMultiState(observer: MultiStateObserver<S>): Boolean
+    fun unsubscribeSimpleState(observer: SimpleStateObserver<S>): Boolean
+    fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>): Boolean
 
     fun getAppState(): S
+    fun getDeepCopy(original: S): S
 }
 
 /** the app's state tree. In this case only a description and its data. */
-open class AppState(open var description: String, var internal: AppState? = null, var data: MutableMap<String, Any> = mutableMapOf()) : State
+open class AppState(var id: String, var data: MutableMap<String, Any> = mutableMapOf(), var child: AppState? = null) : State
 
 /** represents the single source of truth in your andorid app. */
 class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
@@ -70,15 +71,15 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
-        // state change happens most of the time sequentially.
-        // Synchronized just to be aware of middleware
+        // state change happens most of the time sequentially. Synchronized just to be aware
+        // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(newState) {
             if (appState != newState) {
                 field = newState
 
                 // notify only observers that match the state and condition
                 conditionalStateObservers.forEach {
-                    if (newState.internal!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                    if (newState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
                         if (it.match().invoke(newState)) {
                             it.onChange(newState)
                         }
@@ -87,7 +88,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
                 // notify only observers that match the state
                 simpleStateObservers.forEach {
-                    if (newState.internal!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                    if (newState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
                         it.onChange(newState)
                     }
                 }
@@ -95,9 +96,9 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 // notify observers that match one of the states
                 multiStateObservers.forEach { outer ->
                     for (inner in outer.observe()) {
-                        if (inner::class.java.simpleName == newState.internal!!::class.java.simpleName) {
+                        if (inner::class.java.simpleName == newState.child!!::class.java.simpleName) {
                             outer.onChange(newState)
-                            break
+                            break // if matched, no need to keep running, go directly to next "outer" observer
                         }
                     }
                 }
@@ -107,28 +108,37 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
-        appState = action.reduce(appState)
-        return appState
+        appState = getDeepCopy(action.reduce(appState))
+        return getDeepCopy(appState)
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
     override fun dispatch(action: Action<S>) = applyMiddleware(action)
 
     /** the app's current state tree */
-    override fun getAppState() = appState
+    override fun getAppState() = getDeepCopy(appState)
 
     /** whenever dispatch is called, all registered middlewares get the chance to react to actions */
     private fun applyMiddleware(action: Action<S>) = chain[0].apply(appState, action, chain, 0, this)
 
     /** way android components subscribe to a state they are interested in */
-    override fun addMultiStateObserver(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
-    override fun addSimpleStateObserver(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
-    override fun addConditionalStateObserver(observer: ConditionalStateObserver<S>) = conditionalStateObservers.add(element = observer)
+    override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
+    override fun subscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
+    override fun subscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.add(element = observer)
 
     /** whenever a component wants to unsubscribe */
-    override fun removeMultiStateObserver(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
-    override fun removeSimpleStateObserver(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
-    override fun removeConditionalStateObserver(observer: ConditionalStateObserver<S>) = conditionalStateObservers.remove(element = observer)
+    override fun unsubscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
+    override fun unsubscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
+    override fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.remove(element = observer)
+
+    /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
+    override fun getDeepCopy(original: S): S {
+        // this method is one of the most powerful method in the redux concept of immutability.
+        // it avoids wrong usage by programmers and critical, unexpected side effects besides
+        // better usability while reducing states. You do not have to worry about copying them anymore.
+        // TODO copy original state
+        return original
+    }
 }
 
 /**

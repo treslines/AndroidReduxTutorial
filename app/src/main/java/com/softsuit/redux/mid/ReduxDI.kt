@@ -5,9 +5,9 @@ package com.softsuit.redux.mid
  * */
 object DI {
     private val middlewareChain: List<Middleware<AppState>> = listOf(SearchApiMiddleware(), DebugMiddleware())
-    private val internalState = AppState("Internal App State")
-    private val appStateTree = AppState("Redux Tutorial App", internalState)
-    val reduxStore = AppStore(initialState = appStateTree, chain = middlewareChain)
+    private val childState = AppState(id = "Internal App State")
+    private val rootState = AppState(id = "Redux Tutorial App", child = childState)
+    val reduxStore = AppStore(initialState = rootState, chain = middlewareChain)
 }
 
 

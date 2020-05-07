@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
                 xIdTxtCounter.text = state.data["CounterState"].toString()
             }
         }
-        reduxStore.addSimpleStateObserver(aSimpleCounterStateObserver)
+        reduxStore.subscribeSimpleState(aSimpleCounterStateObserver)
 
         // 2. dispatch reset counter action
         reduxStore.dispatch(ResetCounterAction("Reset Counter Event"))
@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        reduxStore.addSimpleStateObserver(aSimpleSearchResultStateObserver)
+        reduxStore.subscribeSimpleState(aSimpleSearchResultStateObserver)
 
         // 4. Register a conditional state
         val aCondition: ConditionReducer<AppState> = {
@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
                 ).show()
             }
         }
-        reduxStore.addConditionalStateObserver(observer = aConditionalCounterStateObserver)
+        reduxStore.subscribeConditionalState(observer = aConditionalCounterStateObserver)
 
         // 5. Register a multi state
         val aMultiStateObserver = object : MultiStateObserver<AppState> {
@@ -66,13 +66,13 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(
                         this@MainActivity,
-                        "Result: ${state.internal!!::class.java.simpleName}",
+                        "Result: ${state.child!!::class.java.simpleName}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             }
         }
-        reduxStore.addMultiStateObserver(observer = aMultiStateObserver)
+        reduxStore.subscribeMultiState(observer = aMultiStateObserver)
 
     }
 

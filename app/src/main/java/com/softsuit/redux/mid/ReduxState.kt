@@ -8,15 +8,15 @@ package com.softsuit.redux.mid
  */
 
 // UI-Actions: For each action, there is its corresponding state
-class CounterState : AppState(description = "Counter State")
+class CounterState : AppState(id = "Counter State")
 
 // Search Middleware Actions: For each action, there is its corresponding state
-class SearchResultState : AppState(description = "Search Result State")
-class SearchingState : AppState(description = "Searching State")
-class SearchForKeywordState : AppState(description = "Search For Keyword State")
-class WaitingForUserInputState : AppState(description = "Waiting For User Input State")
+class SearchResultState : AppState(id = "Search Result State")
+class SearchingState : AppState(id = "Searching State")
+class SearchForKeywordState : AppState(id = "Search For Keyword State")
+class WaitingForUserInputState : AppState(id = "Waiting For User Input State")
 
 // Debug-Development actions: For each action, there is its corresponding state
-class DebugState : AppState(description = "Debug State")
+class DebugState : AppState(id = "Debug State")
 
 
