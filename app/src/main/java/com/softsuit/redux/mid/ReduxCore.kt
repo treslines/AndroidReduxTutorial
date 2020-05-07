@@ -73,31 +73,31 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private var appState: S = initialState
         // state change happens most of the time sequentially. Synchronized just to be aware
         // of middleware asynchronous tasks that could potentially arrive at the same time
-        @Synchronized set(newState) {
-            if (appState != newState) {
-                field = newState
-
+        @Synchronized set(state) {
+            if (appState != state) {
+                field = state
+                
                 // notify only observers that match the state and condition
                 conditionalStateObservers.forEach {
-                    if (newState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
-                        if (it.match().invoke(newState)) {
-                            it.onChange(newState)
+                    if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        if (it.match().invoke(getDeepCopy(appState))) {
+                            it.onChange(getDeepCopy(appState))
                         }
                     }
                 }
 
                 // notify only observers that match the state
                 simpleStateObservers.forEach {
-                    if (newState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
-                        it.onChange(newState)
+                    if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        it.onChange(getDeepCopy(appState))
                     }
                 }
 
                 // notify observers that match one of the states
                 multiStateObservers.forEach { outer ->
                     for (inner in outer.observe()) {
-                        if (inner::class.java.simpleName == newState.child!!::class.java.simpleName) {
-                            outer.onChange(newState)
+                        if (inner::class.java.simpleName == appState.child!!::class.java.simpleName) {
+                            outer.onChange(getDeepCopy(appState))
                             break // if matched, no need to keep running, go directly to next "outer" observer
                         }
                     }
