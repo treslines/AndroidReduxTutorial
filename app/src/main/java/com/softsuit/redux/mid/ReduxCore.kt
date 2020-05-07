@@ -1,5 +1,7 @@
 package com.softsuit.redux.mid
 
+import android.util.Log
+
 /** state as a marker interface to enforce contract. */
 interface State
 
@@ -68,7 +70,7 @@ open class AppState(
     var id: String,
     var data: MutableMap<String, Any> = mutableMapOf(),
     var child: AppState? = null,
-    var hasChild: Boolean = false,
+    var hasChild: Boolean = child != null,
     var isRoot: Boolean = false,
     var hasData: Boolean = data.isNotEmpty()
 ) : State
@@ -92,33 +94,38 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             if (appState != state) {
                 field = state
 
-                // notify only observers that match the state and condition
-                conditionalStateObservers.forEach {
-                    if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
-                        // getDeepCopy() ensures immutability
-                        if (it.match().invoke(getAppState())) {
+                if (appState != null && appState.child != null) {
+                    // notify only observers that match the state and condition
+                    conditionalStateObservers.forEach {
+                        if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                            // getDeepCopy() ensures immutability
+                            if (it.match().invoke(getAppState())) {
+                                it.onChange(getAppState())
+                            }
+                        }
+                    }
+
+                    // notify only observers that match the state
+                    simpleStateObservers.forEach {
+                        if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                            // getDeepCopy() ensures immutability
                             it.onChange(getAppState())
                         }
                     }
-                }
 
-                // notify only observers that match the state
-                simpleStateObservers.forEach {
-                    if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
-                        // getDeepCopy() ensures immutability
-                        it.onChange(getAppState())
-                    }
-                }
-
-                // notify observers that match one of the states
-                multiStateObservers.forEach { outer ->
-                    for (inner in outer.observe()) {
-                        if (inner::class.java.simpleName == appState.child!!::class.java.simpleName) {
-                            // getDeepCopy() ensures immutability
-                            outer.onChange(getAppState())
-                            break // if matched, no need to keep running, go directly to next "outer" observer
+                    // notify observers that match one of the states
+                    multiStateObservers.forEach { outer ->
+                        for (inner in outer.observe()) {
+                            if (inner::class.java.simpleName == appState.child!!::class.java.simpleName) {
+                                // getDeepCopy() ensures immutability
+                                outer.onChange(getAppState())
+                                break // if matched, no need to keep running, go directly to next "outer" observer
+                            }
                         }
                     }
+                } else {
+                    // shall never happen! you broke the store state! :)
+                    Log.i("ReduxCore", "AppState was set to null!")
                 }
 
             }
