@@ -76,10 +76,11 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         @Synchronized set(state) {
             if (appState != state) {
                 field = state
-                
+
                 // notify only observers that match the state and condition
                 conditionalStateObservers.forEach {
                     if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        // getDeepCopy() ensures immutability
                         if (it.match().invoke(getDeepCopy(appState))) {
                             it.onChange(getDeepCopy(appState))
                         }
@@ -89,6 +90,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 // notify only observers that match the state
                 simpleStateObservers.forEach {
                     if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        // getDeepCopy() ensures immutability
                         it.onChange(getDeepCopy(appState))
                     }
                 }
@@ -97,6 +99,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 multiStateObservers.forEach { outer ->
                     for (inner in outer.observe()) {
                         if (inner::class.java.simpleName == appState.child!!::class.java.simpleName) {
+                            // getDeepCopy() ensures immutability
                             outer.onChange(getDeepCopy(appState))
                             break // if matched, no need to keep running, go directly to next "outer" observer
                         }
@@ -108,7 +111,9 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
-        appState = getDeepCopy(action.reduce(appState))
+        // setter gets called here implicit but it will set the state only if it has changed
+        appState = getDeepCopy(action.reduce(getDeepCopy(appState)))
+        // ensure immutability
         return getDeepCopy(appState)
     }
 
