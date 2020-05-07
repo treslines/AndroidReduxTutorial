@@ -60,7 +60,7 @@ interface Store<S : State> {
 
     fun getAppState(): S
     fun lookUpFor(state: S): S
-    fun getDeepCopy(original: S): S
+    fun getDeepCopy(source: S, destination: S): S
 }
 
 /** the app's state tree. In this case only a description and its data. */
@@ -130,7 +130,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // prevent null AppState in case a reducer does something wrong (intentionally or not)
         if (reduced?.child != null) {
             // setter gets called here implicit but it will set the state only if it has changed
-            appState = getDeepCopy(reduced)
+            appState = getDeepCopy(reduced, EmptyState() as S)
         }
         return reduced
     }
@@ -139,7 +139,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun dispatch(action: Action<S>) = chain[0].apply(getAppState(), action, chain, 0, this)
 
     /** the app's current state tree */
-    override fun getAppState() = getDeepCopy(appState)
+    override fun getAppState() = getDeepCopy(appState, EmptyState() as S)
 
     /** way android components subscribe to a state they are interested in */
     override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
@@ -152,13 +152,12 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.remove(element = observer)
 
     /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
-    override fun getDeepCopy(original: S): S {
+    override fun getDeepCopy(source: S, destination: S): S {
         // this method is one of the most powerful method in the redux concept of immutability.
         // it avoids wrong usage by programmers and critical, unexpected side effects besides
         // better usability while reducing states. You do not have to worry about copying them anymore.
-        val deepCopy = EmptyState()
-        copyDeep(appState, deepCopy as S)
-        return deepCopy
+        copyDeep(source, destination)
+        return destination
     }
 
     private fun copyDeep(original: S, copy: S) {
@@ -183,7 +182,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     private fun traverse(state: S, name: String): S {
         return when {
-            state::class.java.simpleName == name -> getDeepCopy(state)
+            state::class.java.simpleName == name -> getDeepCopy(state, EmptyState() as S)
             state.hasChild -> traverse(state.child as S, name)
             else -> EmptyState() as S
         }
