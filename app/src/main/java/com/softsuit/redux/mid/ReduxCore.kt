@@ -100,13 +100,15 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private val simpleStateObservers = mutableSetOf<SimpleStateObserver<S>>()
     private val multiStateObservers = mutableSetOf<MultiStateObserver<S>>()
 
+    /** state reference for faster store update and subscriber notification. Used in isNotDeepEquals() */
+    private var appStateRef: S = EmptyState() as S
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
         // state change happens most of the time sequentially. Synchronized just to be aware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
-            if (appState != state) {
-                field = state
+            if (hasStateChanged(state)) {
+                field = updateDeep(appState, state)
 
                 if (appState.hasChildren) {
                     appState.children.forEach { child ->
@@ -209,6 +211,24 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 copyDeep(it as S, empty as S)
             }
         }
+    }
+
+    private fun hasStateChanged(state: S): Boolean {
+        return when (val result = lookUpFor(state)) {
+            is EmptyState -> false
+            else -> isNotDeepEquals(result, state)
+        }
+    }
+
+    // TODO: save a reference of the changed state to notify listeners and gain performance
+    private fun isNotDeepEquals(storeState: S, toCompare: S): Boolean {
+        // TODO: compare state tree node
+        return true
+    }
+
+    private fun updateDeep(storeState: S, toUpdate: S): S {
+        // TODO: update state tree node
+        return toUpdate // return updated instance
     }
 
     /** when your app depends on other state, lookup for it in the app state tree */
