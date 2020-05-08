@@ -14,7 +14,6 @@ typealias Reducer <T> = (T) -> T
 interface Action<S : State> {
     /** place where android components places its reducers */
     fun reduce(old: S): S
-
     /** for traceability and debugging only */
     fun getName(): String = this::class.java.name
 }
@@ -23,7 +22,6 @@ interface Action<S : State> {
 interface SimpleStateObserver<S : State> {
     /** state you are registering for */
     fun observe(): S
-
     /** place where the android component react to change */
     fun onChange(state: S)
 }
@@ -32,7 +30,6 @@ interface SimpleStateObserver<S : State> {
 interface MultiStateObserver<S : State> {
     /** states you are registering for */
     fun observe(): List<S>
-
     /** place where the android component reacts to change */
     fun onChange(state: S)
 }
@@ -44,10 +41,8 @@ typealias ConditionReducer <T> = (T) -> Boolean
 interface ConditionStateObserver<S : State> {
     /** any condition you want to match besides state change. Property, name, id, string whatever you need */
     fun match(): ConditionReducer<S>
-
     /** state you are registering for */
     fun observe(): S
-
     /** place where the android component reacts to change */
     fun onChange(state: S)
 }
@@ -83,7 +78,7 @@ open class AppState(
     var hasData: Boolean = data != null
 ) : State {
     /**
-     * each subscriber knows which state it has registered for, so it can
+     * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
      */
     fun <T> getData(modelType: Class<T>): T? = Gson().fromJson(Gson().toJson(data).toString(), modelType)
@@ -167,6 +162,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun reduce(action: Action<S>): S {
         val reduced = action.reduce(getAppState())
         // prevent null AppState in case a reducer does something wrong (intentionally or not)
+        // TODO: update appState over updateDeep()
         reduced?.children?.let { appState = getDeepCopy(reduced, EmptyState() as S) }
         return reduced
     }
@@ -230,6 +226,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // TODO: update state tree node
         return toUpdate // return updated instance
     }
+
+    // TODO: provide lookup method that returns deepCopy of desired state
 
     /** when your app depends on other state, lookup for it in the app state tree */
     override fun lookUpFor(state: S): S {
