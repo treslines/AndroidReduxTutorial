@@ -19,4 +19,7 @@ class WaitingForUserInputState : AppState(id = "Waiting For User Input State")
 // Debug-Development actions: For each action, there is its corresponding state
 class DebugState : AppState(id = "Debug State")
 
+// TODO: define state types here
+// TODO: Ex: SearchResultStateType
+
 

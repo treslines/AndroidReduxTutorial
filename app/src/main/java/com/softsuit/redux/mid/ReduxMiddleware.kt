@@ -42,7 +42,7 @@ class SearchApiMiddleware : Middleware<AppState> {
                 Thread(Runnable {
                     // keep in mind that AppState in store changed now to "SearchingForKeywordState" and we have put the keyword
                     // we are looking for into this state's mapped data. So we are going to retrieve it for the next task.
-                    val keywordToSearchFor = newAppState.data["SearchForKeywordState"].toString()
+                    val keywordToSearchFor = newAppState.data.toString()
 
                     // instruct store again to move now to state "Search Result" after this "loooong" task simulation is done!
                     // as soon as this "loooong" task is done, the store is going to notify all subscribers again and in the

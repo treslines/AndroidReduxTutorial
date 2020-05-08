@@ -19,7 +19,9 @@ class MainActivity : AppCompatActivity() {
         val aSimpleCounterStateObserver = object : SimpleStateObserver<AppState> {
             override fun observe() = CounterState()
             override fun onChange(state: AppState) {
-                xIdTxtCounter.text = state.data["CounterState"].toString()
+                state.getData()?.let {
+                    xIdTxtCounter.text = it.toString()
+                }
             }
         }
         reduxStore.subscribeSimpleState(aSimpleCounterStateObserver)
@@ -34,7 +36,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(
                         this@MainActivity,
-                        "SearchResultState: ${state.data["SearchResultState"]}",
+                        "SearchResultState: ${state.data}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -44,7 +46,8 @@ class MainActivity : AppCompatActivity() {
 
         // 4. Register a conditional state
         val aCondition: ConditionReducer<AppState> = {
-            it.data["CounterState"] == 2
+            //it.jsonData["CounterState"] == 2
+            true
         }
         val aConditionalCounterStateObserver = object : ConditionalStateObserver<AppState> {
             override fun match() = aCondition
@@ -52,7 +55,7 @@ class MainActivity : AppCompatActivity() {
             override fun onChange(state: AppState) {
                 Toast.makeText(
                     this@MainActivity,
-                    "CounterState: ${state.data["CounterState"]}",
+                    "CounterState: ${state.data}",
                     Toast.LENGTH_SHORT
                 ).show()
             }

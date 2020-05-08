@@ -1,7 +1,11 @@
 package com.softsuit.redux.mid
 
+import android.util.Log
+import com.google.gson.Gson
+import java.io.Serializable
+
 /** state as a marker interface to enforce contract. */
-interface State
+interface State : Serializable
 
 /** pure function. used in conjunction(or not) with actions and subscribers reducing the state. */
 typealias Reducer <T> = (T) -> T
@@ -66,12 +70,25 @@ interface Store<S : State> {
 /** the app's state tree. In this case only a description and its data. */
 open class AppState(
     var id: String,
-    var data: MutableMap<String, Any> = mutableMapOf(),
+    var data: String? = null,
+    var dataType: String? = null,
     var child: AppState? = null,
     var hasChild: Boolean = child != null,
     var isRoot: Boolean = false,
-    var hasData: Boolean = data.isNotEmpty()
-) : State
+    var hasData: Boolean = data != null
+) : State {
+
+    fun getData(): Any? {
+        dataType?.let {
+            try {
+                return Gson().fromJson(Gson().toJson(data).toString(), Class.forName(it))
+            } catch (e: Exception) {
+                Log.i("ReduxCore", "Specified data type: $it does not exist or has a wrong class path!")
+            }
+        }
+        return null
+    }
+}
 
 /** state returned by lookUpForState() if not match found */
 class EmptyState() : AppState(id = "empty")
@@ -92,10 +109,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             if (appState != state) {
                 field = state
 
-                // notify only observers that match the state and condition
+                appState.child?.let { child ->
+                    // notify only observers that match the state and condition
                     conditionalStateObservers.forEach {
-                        if (appState.child!!::class.java.name == it.observe()::class.java.name) {
-                            // getDeepCopy() ensures immutability
+                        if (child::class.java.name == it.observe()::class.java.name) {
                             if (it.match().invoke(getAppState())) {
                                 it.onChange(getAppState())
                             }
@@ -104,8 +121,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
                     // notify only observers that match the state
                     simpleStateObservers.forEach {
-                        if (appState.child!!::class.java.name == it.observe()::class.java.name) {
-                            // getDeepCopy() ensures immutability
+                        if (child::class.java.name == it.observe()::class.java.name) {
                             it.onChange(getAppState())
                         }
                     }
@@ -113,13 +129,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                     // notify observers that match one of the states
                     multiStateObservers.forEach { outer ->
                         for (inner in outer.observe()) {
-                            if (inner::class.java.name == appState.child!!::class.java.name) {
-                                // getDeepCopy() ensures immutability
+                            if (inner::class.java.name == child::class.java.name) {
                                 outer.onChange(getAppState())
                                 break // if matched, no need to keep running, go directly to next "outer" observer
                             }
                         }
                     }
+                }
 
             }
         }
@@ -128,10 +144,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun reduce(action: Action<S>): S {
         val reduced = action.reduce(getAppState())
         // prevent null AppState in case a reducer does something wrong (intentionally or not)
-        if (reduced?.child != null) {
-            // setter gets called here implicit but it will set the state only if it has changed
-            appState = getDeepCopy(reduced, EmptyState() as S)
-        }
+        reduced?.child?.let { appState = getDeepCopy(reduced, EmptyState() as S) }
         return reduced
     }
 
@@ -143,11 +156,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** way android components subscribe to a state they are interested in */
     override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
+
     override fun subscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
     override fun subscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.add(element = observer)
 
     /** whenever a component wants to unsubscribe */
     override fun unsubscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
+
     override fun unsubscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
     override fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.remove(element = observer)
 
@@ -165,9 +180,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         copy.isRoot = original.isRoot
         copy.hasChild = original.hasChild
         if (original.hasData) {
-            val data = mutableMapOf<String, Any>()
-            original.data.forEach { data[it.key] = it.value }
-            copy.data = data
+            copy.data = original.data
+            copy.dataType = original.dataType
         }
         if (original.hasChild) {
             copy.child = EmptyState()

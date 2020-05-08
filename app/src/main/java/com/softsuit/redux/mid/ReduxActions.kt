@@ -14,8 +14,8 @@ import android.util.Log
 // WAY 1: most programmers are used to. just implement the method's signature, no magic!
 class ResetCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
-        old.data["CounterState"] = 0
-        return AppState(id = "ResetCounterState", child = CounterState(), data = LinkedHashMap(old.data))
+        //old.jsonData["CounterState"] = 0
+        return AppState(id = "ResetCounterState", child = CounterState(), data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -28,12 +28,12 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
     // does the same as way 1 but in one liner
     override fun reduce(old: AppState): AppState {
 
-        when (old.data["CounterState"]) {
-            null -> old.data["CounterState"] = 0.minus(1)
-            else -> old.data["CounterState"] = old.data["CounterState"].toString().toInt().minus(1)
-        }
+        //when (old.jsonData["CounterState"]) {
+        //    null -> old.jsonData["CounterState"] = 0.minus(1)
+        //    else -> old.jsonData["CounterState"] = old.jsonData["CounterState"].toString().toInt().minus(1)
+        //}
 
-        return AppState(id = "DecrementCounterState", child = CounterState(), data = LinkedHashMap(old.data))
+        return AppState(id = "DecrementCounterState", child = CounterState(), data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -47,12 +47,12 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
     // reducer logic implemented here
     private val reducer: Reducer<AppState> = {
 
-        when (it.data["CounterState"]) {
-            null -> it.data["CounterState"] = 0.plus(1)
-            else -> it.data["CounterState"] = it.data["CounterState"].toString().toInt().plus(1)
-        }
+        //when (it.jsonData["CounterState"]) {
+        //    null -> it.jsonData["CounterState"] = 0.plus(1)
+        //    else -> it.jsonData["CounterState"] = it.jsonData["CounterState"].toString().toInt().plus(1)
+        //}
 
-        AppState(id = "IncrementCounterState", child = CounterState(), data = LinkedHashMap(it.data))
+        AppState(id = "IncrementCounterState", child = CounterState(), data = "LinkedHashMap(it.jsonData)")
     }
 
     // reducer result assigned to the method as return type
@@ -74,8 +74,8 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
 class SearchingAction(private val eventDescription: String) : Action<AppState> {
 
     override fun reduce(old: AppState): AppState {
-        old.data["SearchingState"] = true
-        return AppState(id = "SearchingState", child = SearchingState(), data = LinkedHashMap(old.data))
+        //old.jsonData["SearchingState"] = true
+        return AppState(id = "SearchingState", child = SearchingState(), data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -88,8 +88,8 @@ class SearchResultAction(private val eventDescription: String, private val keywo
     override fun reduce(old: AppState): AppState {
         // simulating long search process in database
         Thread.sleep(1000 * 5)
-        old.data["SearchResultState"] = keywordToSearchFor // imagine: here would be the real result
-        return AppState(id = "SearchResultState", child = SearchResultState(), data = LinkedHashMap(old.data))
+        //old.jsonData["SearchResultState"] = keywordToSearchFor // imagine: here would be the real result
+        return AppState(id = "SearchResultState", child = SearchResultState(), data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -100,8 +100,8 @@ class SearchResultAction(private val eventDescription: String, private val keywo
 class SearchForKeywordAction(private val eventDescription: String, private val keyword: String) : Action<AppState> {
 
     override fun reduce(old: AppState): AppState {
-        old.data["SearchForKeywordState"] = keyword
-        return AppState(id = description, child = SearchForKeywordState(), data = LinkedHashMap(old.data))
+        //old.jsonData["SearchForKeywordState"] = keyword
+        return AppState(id = description, child = SearchForKeywordState(), data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -112,8 +112,8 @@ class SearchForKeywordAction(private val eventDescription: String, private val k
 class WaitingForUserInputAction(private val eventDescription: String) : Action<AppState> {
 
     override fun reduce(old: AppState): AppState {
-        old.data["WaitingForUserInputState"] = true
-        return AppState(id = "WaitingForUserInputState", child = WaitingForUserInputState(), data = LinkedHashMap(old.data))
+        //old.jsonData["WaitingForUserInputState"] = true
+        return AppState(id = "WaitingForUserInputState", child = WaitingForUserInputState(), data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -133,8 +133,8 @@ class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
         val stateName = it.child!!::class.java.simpleName
-        Log.d(stateName, it.data[stateName].toString())
-        AppState(id = description, child = DebugState(), data = LinkedHashMap(it.data))
+        //Log.d(stateName, it.jsonData[stateName].toString())
+        AppState(id = description, child = DebugState(), data = "LinkedHashMap(it.jsonData)")
     }
 
     override fun reduce(old: AppState) = reducer(old)
