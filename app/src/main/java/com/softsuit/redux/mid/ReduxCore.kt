@@ -94,7 +94,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
                 // notify only observers that match the state and condition
                     conditionalStateObservers.forEach {
-                        if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        if (appState.child!!::class.java.name == it.observe()::class.java.name) {
                             // getDeepCopy() ensures immutability
                             if (it.match().invoke(getAppState())) {
                                 it.onChange(getAppState())
@@ -104,7 +104,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
                     // notify only observers that match the state
                     simpleStateObservers.forEach {
-                        if (appState.child!!::class.java.simpleName == it.observe()::class.java.simpleName) {
+                        if (appState.child!!::class.java.name == it.observe()::class.java.name) {
                             // getDeepCopy() ensures immutability
                             it.onChange(getAppState())
                         }
@@ -113,7 +113,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                     // notify observers that match one of the states
                     multiStateObservers.forEach { outer ->
                         for (inner in outer.observe()) {
-                            if (inner::class.java.simpleName == appState.child!!::class.java.simpleName) {
+                            if (inner::class.java.name == appState.child!!::class.java.name) {
                                 // getDeepCopy() ensures immutability
                                 outer.onChange(getAppState())
                                 break // if matched, no need to keep running, go directly to next "outer" observer
@@ -177,12 +177,12 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** when your app depends on other state, lookup for it in the app state tree */
     override fun lookUpFor(state: S): S {
-        return traverse(appState, state::class.java.simpleName)
+        return traverse(appState, state::class.java.name)
     }
 
     private fun traverse(state: S, name: String): S {
         return when {
-            state::class.java.simpleName == name -> getDeepCopy(state, EmptyState() as S)
+            state::class.java.name == name -> getDeepCopy(state, EmptyState() as S)
             state.hasChild -> traverse(state.child as S, name)
             else -> EmptyState() as S
         }
