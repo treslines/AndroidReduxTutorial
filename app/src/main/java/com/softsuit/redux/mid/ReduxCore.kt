@@ -90,8 +90,8 @@ open class AppState(
     }
 }
 
-/** state returned by lookUpForState() if not match found */
-class EmptyState() : AppState(id = "empty")
+/** state returned by lookUpFor(state) if not match found */
+class EmptyState() : AppState(id = "EmptyState")
 
 /** represents the single source of truth in your andorid app. */
 class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
@@ -156,13 +156,11 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** way android components subscribe to a state they are interested in */
     override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
-
     override fun subscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
     override fun subscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.add(element = observer)
 
     /** whenever a component wants to unsubscribe */
     override fun unsubscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
-
     override fun unsubscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
     override fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.remove(element = observer)
 
@@ -194,6 +192,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         return traverse(appState, state::class.java.name)
     }
 
+    /**
+     * traverses the whole state tree returning the matched state
+     * with its underlying states if any or an EmptyState
+     */
     private fun traverse(state: S, name: String): S {
         return when {
             state::class.java.name == name -> getDeepCopy(state, EmptyState() as S)
