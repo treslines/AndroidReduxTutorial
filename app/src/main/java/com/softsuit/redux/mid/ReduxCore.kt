@@ -34,7 +34,7 @@ interface MultiStateObserver<S : State> {
     fun onChange(state: S)
 }
 
-/** used while registering conditonal obersers */
+/** used while registering conditional observers */
 typealias ConditionReducer <T> = (T) -> Boolean
 
 /** for components interested in one specific state change and any condition of it. The state must match AND the property name */
@@ -209,17 +209,30 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
-    private fun hasStateChanged(state: S): Boolean {
-        return when (val result = lookUpFor(state)) {
+    private fun hasStateChanged(incoming: S): Boolean {
+        return when (val matchedState = lookUpFor(incoming)) {
             is EmptyState -> false
-            else -> isNotDeepEquals(result, state)
+            else -> isNotDeepEquals(matchedState, incoming)
         }
     }
 
     // TODO: save a reference of the changed state to notify listeners and gain performance
-    private fun isNotDeepEquals(storeState: S, toCompare: S): Boolean {
-        // TODO: compare state tree node
-        return true
+    private fun isNotDeepEquals(state: S, incoming: S): Boolean {
+        val noEquals = (
+                state.id != incoming.id ||
+                        state.isRoot != incoming.isRoot ||
+                        state.hasData != incoming.hasData ||
+                        state.data != incoming.data ||
+                        state.hasChildren != incoming.hasChildren ||
+                        state.children.size != incoming.children.size
+                )
+        return when (noEquals) {
+            true -> true
+            else -> {
+                false
+            }
+        }
+        return noEquals
     }
 
     private fun updateDeep(storeState: S, toUpdate: S): S {
