@@ -15,7 +15,7 @@ import android.util.Log
 class ResetCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
         //old.jsonData["CounterState"] = 0
-        return AppState(id = "ResetCounterState", child = CounterState(), data = "LinkedHashMap(old.jsonData)")
+        return AppState(id = "ResetCounterState", data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -33,7 +33,7 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
         //    else -> old.jsonData["CounterState"] = old.jsonData["CounterState"].toString().toInt().minus(1)
         //}
 
-        return AppState(id = "DecrementCounterState", child = CounterState(), data = "LinkedHashMap(old.jsonData)")
+        return AppState(id = "DecrementCounterState", data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -52,7 +52,7 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
         //    else -> it.jsonData["CounterState"] = it.jsonData["CounterState"].toString().toInt().plus(1)
         //}
 
-        AppState(id = "IncrementCounterState", child = CounterState(), data = "LinkedHashMap(it.jsonData)")
+        AppState(id = "IncrementCounterState", data = "LinkedHashMap(it.jsonData)")
     }
 
     // reducer result assigned to the method as return type
@@ -75,7 +75,7 @@ class SearchingAction(private val eventDescription: String) : Action<AppState> {
 
     override fun reduce(old: AppState): AppState {
         //old.jsonData["SearchingState"] = true
-        return AppState(id = "SearchingState", child = SearchingState(), data = "LinkedHashMap(old.jsonData)")
+        return AppState(id = "SearchingState", data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -89,7 +89,7 @@ class SearchResultAction(private val eventDescription: String, private val keywo
         // simulating long search process in database
         Thread.sleep(1000 * 5)
         //old.jsonData["SearchResultState"] = keywordToSearchFor // imagine: here would be the real result
-        return AppState(id = "SearchResultState", child = SearchResultState(), data = "LinkedHashMap(old.jsonData)")
+        return AppState(id = "SearchResultState", data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -101,7 +101,7 @@ class SearchForKeywordAction(private val eventDescription: String, private val k
 
     override fun reduce(old: AppState): AppState {
         //old.jsonData["SearchForKeywordState"] = keyword
-        return AppState(id = description, child = SearchForKeywordState(), data = "LinkedHashMap(old.jsonData)")
+        return AppState(id = description, data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -113,7 +113,7 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 
     override fun reduce(old: AppState): AppState {
         //old.jsonData["WaitingForUserInputState"] = true
-        return AppState(id = "WaitingForUserInputState", child = WaitingForUserInputState(), data = "LinkedHashMap(old.jsonData)")
+        return AppState(id = "WaitingForUserInputState", data = "LinkedHashMap(old.jsonData)")
     }
 
     companion object Id {
@@ -132,9 +132,9 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
-        val stateName = it.child!!::class.java.simpleName
+        val stateName = it.children!!::class.java.simpleName
         //Log.d(stateName, it.jsonData[stateName].toString())
-        AppState(id = description, child = DebugState(), data = "LinkedHashMap(it.jsonData)")
+        AppState(id = description, data = "LinkedHashMap(it.jsonData)")
     }
 
     override fun reduce(old: AppState) = reducer(old)
@@ -148,7 +148,7 @@ class LogAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
         Log.d("logging", "AppData: ${it.id}")
-        Log.d("logging", "AppData>Internal: ${it.child?.id}")
+        Log.d("logging", "AppData>Internal: ${it.children}")
         it
     }
 

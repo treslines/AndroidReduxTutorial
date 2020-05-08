@@ -21,5 +21,6 @@ class DebugState : AppState(id = "Debug State")
 
 // TODO: define state types here
 // TODO: Ex: SearchResultStateType
+class CounterStateModel(val name: String)
 
 

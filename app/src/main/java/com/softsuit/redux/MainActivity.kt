@@ -19,9 +19,8 @@ class MainActivity : AppCompatActivity() {
         val aSimpleCounterStateObserver = object : SimpleStateObserver<AppState> {
             override fun observe() = CounterState()
             override fun onChange(state: AppState) {
-                state.getData()?.let {
-                    xIdTxtCounter.text = it.toString()
-                }
+                val data: CounterStateModel? = state.getData(CounterStateModel::class.java)
+                data?.let { xIdTxtCounter.text = it.name }
             }
         }
         reduxStore.subscribeSimpleState(aSimpleCounterStateObserver)
@@ -49,7 +48,7 @@ class MainActivity : AppCompatActivity() {
             //it.jsonData["CounterState"] == 2
             true
         }
-        val aConditionalCounterStateObserver = object : ConditionalStateObserver<AppState> {
+        val aConditionalCounterStateObserver = object : ConditionStateObserver<AppState> {
             override fun match() = aCondition
             override fun observe() = CounterState()
             override fun onChange(state: AppState) {
@@ -69,7 +68,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(
                         this@MainActivity,
-                        "Result: ${state.child!!::class.java.simpleName}",
+                        "Result: ${state.children!!::class.java.simpleName}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -81,9 +80,11 @@ class MainActivity : AppCompatActivity() {
 
     // 6. dispatch actions on user input
     fun decrement(view: View) = reduxStore.reduce(DecrementCounterAction("Decrement Counter Event"))
+
     fun increment(view: View) = reduxStore.reduce(IncrementCounterAction("Increment Counter Event"))
 
     // 7. dispatch middleware action on user input
     fun search(view: View) = reduxStore.dispatch(SearchingAction("Searching Event"))
+
     fun debug(view: View) = reduxStore.dispatch(DebugAction())
 }

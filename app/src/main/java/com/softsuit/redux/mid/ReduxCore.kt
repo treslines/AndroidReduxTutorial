@@ -41,7 +41,7 @@ interface MultiStateObserver<S : State> {
 typealias ConditionReducer <T> = (T) -> Boolean
 
 /** for components interested in one specific state change and any condition of it. The state must match AND the property name */
-interface ConditionalStateObserver<S : State> {
+interface ConditionStateObserver<S : State> {
     /** any condition you want to match besides state change. Property, name, id, string whatever you need */
     fun match(): ConditionReducer<S>
 
@@ -59,11 +59,11 @@ interface Store<S : State> {
 
     fun subscribeMultiState(observer: MultiStateObserver<S>): Boolean
     fun subscribeSimpleState(observer: SimpleStateObserver<S>): Boolean
-    fun subscribeConditionalState(observer: ConditionalStateObserver<S>): Boolean
+    fun subscribeConditionalState(observer: ConditionStateObserver<S>): Boolean
 
     fun unsubscribeMultiState(observer: MultiStateObserver<S>): Boolean
     fun unsubscribeSimpleState(observer: SimpleStateObserver<S>): Boolean
-    fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>): Boolean
+    fun unsubscribeConditionalState(observer: ConditionStateObserver<S>): Boolean
 
     fun getAppState(): S
     fun lookUpFor(state: S): S
@@ -77,23 +77,16 @@ interface Store<S : State> {
 open class AppState(
     var id: String,
     var data: String? = null,
-    var dataType: String? = null,
-    var child: AppState? = null,
-    var hasChild: Boolean = child != null,
+    var children: MutableList<AppState> = mutableListOf(),
+    var hasChildren: Boolean = children.isNotEmpty(),
     var isRoot: Boolean = false,
     var hasData: Boolean = data != null
 ) : State {
-
-    fun getData(): Any? {
-        dataType?.let {
-            try {
-                return Gson().fromJson(Gson().toJson(data).toString(), Class.forName(it))
-            } catch (e: Exception) {
-                Log.i("ReduxCore", "Specified data type: $it does not exist or has a wrong class path!")
-            }
-        }
-        return null
-    }
+    /**
+     * each subscriber knows which state it has registered for, so it can
+     * retrieve the right data model from the state as soon as it gets notified
+     */
+    fun <T> getData(modelType: Class<T>): T? = Gson().fromJson(Gson().toJson(data).toString(), modelType)
 }
 
 /** state returned by lookUpFor(state) if not match found */
@@ -103,7 +96,7 @@ class EmptyState() : AppState(id = "EmptyState")
 class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
 
     /** android component subscriptions. */
-    private val conditionalStateObservers = mutableSetOf<ConditionalStateObserver<S>>()
+    private val conditionStateObservers = mutableSetOf<ConditionStateObserver<S>>()
     private val simpleStateObservers = mutableSetOf<SimpleStateObserver<S>>()
     private val multiStateObservers = mutableSetOf<MultiStateObserver<S>>()
 
@@ -115,30 +108,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             if (appState != state) {
                 field = state
 
-                appState.child?.let { child ->
-                    // notify only observers that match the state and condition
-                    conditionalStateObservers.forEach {
-                        if (child::class.java.name == it.observe()::class.java.name) {
-                            if (it.match().invoke(getAppState())) {
-                                it.onChange(getAppState())
-                            }
-                        }
-                    }
-
-                    // notify only observers that match the state
-                    simpleStateObservers.forEach {
-                        if (child::class.java.name == it.observe()::class.java.name) {
-                            it.onChange(getAppState())
-                        }
-                    }
-
-                    // notify observers that match one of the states
-                    multiStateObservers.forEach { outer ->
-                        for (inner in outer.observe()) {
-                            if (inner::class.java.name == child::class.java.name) {
-                                outer.onChange(getAppState())
-                                break // if matched, no need to keep running, go directly to next "outer" observer
-                            }
+                if (appState.hasChildren) {
+                    appState.children.forEach { child ->
+                        child?.let { it ->
+                            notifySubscribers(it as S)
                         }
                     }
                 }
@@ -146,11 +119,53 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             }
         }
 
+    private fun notifySubscribers(state: S) {
+        notifyMultiStateSubscribers(state)
+        notifySimpleStateSubscribers(state)
+        notifyConditionalStateSubscribers(state)
+        while (state.hasChildren) {
+            state.children.forEach { child ->
+                child?.let { it ->
+                    notifySubscribers(it as S)
+                }
+            }
+        }
+    }
+
+    private fun notifyMultiStateSubscribers(state: AppState) {
+        multiStateObservers.forEach { outer ->
+            for (inner in outer.observe()) {
+                if (inner::class.java.name == state::class.java.name) {
+                    outer.onChange(getAppState())
+                    break // if matched, no need to keep running, go directly to next "outer" observer
+                }
+            }
+        }
+    }
+
+    private fun notifySimpleStateSubscribers(state: AppState) {
+        simpleStateObservers.forEach {
+            if (state::class.java.name == it.observe()::class.java.name) {
+                it.onChange(getAppState())
+            }
+        }
+    }
+
+    private fun notifyConditionalStateSubscribers(state: AppState) {
+        conditionStateObservers.forEach {
+            if (state::class.java.name == it.observe()::class.java.name) {
+                if (it.match().invoke(getAppState())) {
+                    it.onChange(getAppState())
+                }
+            }
+        }
+    }
+
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
         val reduced = action.reduce(getAppState())
         // prevent null AppState in case a reducer does something wrong (intentionally or not)
-        reduced?.child?.let { appState = getDeepCopy(reduced, EmptyState() as S) }
+        reduced?.children?.let { appState = getDeepCopy(reduced, EmptyState() as S) }
         return reduced
     }
 
@@ -162,13 +177,15 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** way android components subscribe to a state they are interested in */
     override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
+
     override fun subscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
-    override fun subscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.add(element = observer)
+    override fun subscribeConditionalState(observer: ConditionStateObserver<S>) = conditionStateObservers.add(element = observer)
 
     /** whenever a component wants to unsubscribe */
     override fun unsubscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
+
     override fun unsubscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
-    override fun unsubscribeConditionalState(observer: ConditionalStateObserver<S>) = conditionalStateObservers.remove(element = observer)
+    override fun unsubscribeConditionalState(observer: ConditionStateObserver<S>) = conditionStateObservers.remove(element = observer)
 
     /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
     override fun getDeepCopy(source: S, destination: S): S {
@@ -182,14 +199,15 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private fun copyDeep(original: S, copy: S) {
         copy.id = original.id
         copy.isRoot = original.isRoot
-        copy.hasChild = original.hasChild
         if (original.hasData) {
             copy.data = original.data
-            copy.dataType = original.dataType
         }
-        if (original.hasChild) {
-            copy.child = EmptyState()
-            copyDeep(original.child as S, copy.child as S)
+        if (original.hasChildren) {
+            original.children.forEach {
+                val empty = EmptyState()
+                copy.children.add(empty)
+                copyDeep(it as S, empty as S)
+            }
         }
     }
 
@@ -203,11 +221,14 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
      * with its underlying states if any or an EmptyState
      */
     private fun traverse(state: S, name: String): S {
-        return when {
-            state::class.java.name == name -> getDeepCopy(state, EmptyState() as S)
-            state.hasChild -> traverse(state.child as S, name)
-            else -> EmptyState() as S
+        if (state::class.java.name == name) {
+            return state
+        } else if (state.hasChildren) {
+            state.children.forEach {
+                traverse(it as S, name)
+            }
         }
+        return EmptyState() as S
     }
 
     override fun getStateName(): String = appState::class.java.name
