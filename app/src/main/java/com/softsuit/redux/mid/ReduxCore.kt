@@ -14,6 +14,9 @@ typealias Reducer <T> = (T) -> T
 interface Action<S : State> {
     /** place where android components places its reducers */
     fun reduce(old: S): S
+
+    /** for traceability and debugging only */
+    fun getName(): String = this::class.java.name
 }
 
 /** Registration for components interested simply on a state change */
@@ -65,9 +68,12 @@ interface Store<S : State> {
     fun getAppState(): S
     fun lookUpFor(state: S): S
     fun getDeepCopy(source: S, destination: S): S
+
+    /** for traceability and debugging only */
+    fun getStateName(): String
 }
 
-/** the app's state tree. In this case only a description and its data. */
+/** the app's state tree in a serializable manner (easier to store and re-store it) */
 open class AppState(
     var id: String,
     var data: String? = null,
@@ -203,6 +209,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             else -> EmptyState() as S
         }
     }
+
+    override fun getStateName(): String = appState::class.java.name
 }
 
 /**
@@ -225,9 +233,13 @@ interface Middleware<S : AppState> {
     ) {
         val nextIndex = chainIndex + 1
         if (isEndOfChain(nextIndex, chain)) {
-            store.reduce(action)
+            store.reduce(action).also {
+                Log.i("ReduxCore", "Store reduced action=${action.getName()}")
+            }
         } else {
-            chain[nextIndex].apply(state, action, chain, nextIndex, store)
+            chain[nextIndex].apply(state, action, chain, nextIndex, store).also {
+                Log.i("ReduxCore", "Middleware=${chain[nextIndex].getName()} dispatched state=${store.getStateName()} with action=${action.getName()}")
+            }
         }
     }
 
@@ -248,6 +260,9 @@ interface Middleware<S : AppState> {
      * next() method to decide if the middleware reached the end of the chain or not.
      */
     private fun isEndOfChain(nextIndex: Int, chain: List<Middleware<S>>) = nextIndex == chain.size
+
+    /** for traceability and debugging only */
+    fun getName(): String = this::class.java.name
 }
 
 
