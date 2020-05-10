@@ -60,8 +60,8 @@ interface Store<S : State> {
     fun unsubscribeSimpleState(observer: SimpleStateObserver<S>): Boolean
     fun unsubscribeConditionalState(observer: ConditionStateObserver<S>): Boolean
 
+    fun lookUp(state: S): S
     fun getAppState(): S
-    fun lookUpFor(state: S): S
     fun getDeepCopy(source: S, destination: S): S
 
     /** for traceability and debugging only */
@@ -103,7 +103,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
             if (hasStateChanged(state)) {
-                field = updateDeep(appState, state)
+                updateDeep(state)
+                field = appState
 
                 if (appState.hasChildren) {
                     appState.children.forEach { child ->
@@ -160,11 +161,15 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
-        val reduced = action.reduce(getAppState())
+        val reduced: S = action.reduce(getAppState())
         // prevent null AppState in case a reducer does something wrong (intentionally or not)
-        // TODO: update appState over updateDeep()
-        reduced?.children?.let { appState = getDeepCopy(reduced, EmptyState() as S) }
-        return reduced
+        // TODO: test it
+        reduced?.let {
+            if (isNotDeepEquals(lookUpFor(reduced), reduced)) {
+                updateDeep(reduced)
+            }
+        }
+        return getDeepCopy(appState, EmptyState() as S)
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
@@ -194,6 +199,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         return destination
     }
 
+    // TODO: test it
     private fun copyDeep(original: S, copy: S) {
         copy.id = original.id
         copy.isRoot = original.isRoot
@@ -209,14 +215,18 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
+    // TODO: test it
     private fun hasStateChanged(incoming: S): Boolean {
         return when (val matchedState = lookUpFor(incoming)) {
             is EmptyState -> false
-            else -> isNotDeepEquals(matchedState, incoming)
+            else -> {
+                // appStateRef =  matchedState // save ref temporally for faster update and notification later
+                isNotDeepEquals(matchedState, incoming)
+            }
         }
     }
 
-    // TODO: save a reference of the changed state to notify listeners and gain performance
+    // TODO: test it
     private fun isNotDeepEquals(state: S, incoming: S): Boolean {
         val noEquals = (
                 state.id != incoming.id ||
@@ -226,24 +236,39 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                         state.hasChildren != incoming.hasChildren ||
                         state.children.size != incoming.children.size
                 )
-        return when (noEquals) {
-            true -> true
+        when (noEquals) {
+            true -> return noEquals
             else -> {
-                false
+                if (incoming.hasChildren) {
+                    incoming.children.forEachIndexed { index, outer ->
+                        isNotDeepEquals(outer as S, state.children[index] as S)
+                    }
+                }
             }
         }
+        // appStateRef = EmptyState() as S // reset ref if equals - nothing to update or notify
         return noEquals
     }
 
-    private fun updateDeep(storeState: S, toUpdate: S): S {
-        // TODO: update state tree node
-        return toUpdate // return updated instance
+    // TODO: test it
+    private fun updateDeep(toUpdate: S) {
+        val found = lookUpFor(toUpdate)
+        val copy = getDeepCopy(toUpdate, EmptyState() as S)
+        getDeepCopy(copy, found) // update references reusing deepCopy
     }
 
-    // TODO: provide lookup method that returns deepCopy of desired state
+    /** when your app depends on other state, lookup for it in the app state tree and return a copy of it of an EmptyState */
+    // TODO: test it
+    override fun lookUp(state: S): S {
+        return when (val found = traverse(appState, state::class.java.name)) {
+            is EmptyState -> found
+            else -> getDeepCopy(found, EmptyState() as S)
+        }
+    }
 
-    /** when your app depends on other state, lookup for it in the app state tree */
-    override fun lookUpFor(state: S): S {
+    /** look up for a specific state in app state tree and return a reference to it or an EmptyState */
+    // TODO: test it
+    private fun lookUpFor(state: S): S {
         return traverse(appState, state::class.java.name)
     }
 
