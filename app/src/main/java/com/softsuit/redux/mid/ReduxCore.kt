@@ -103,13 +103,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
             if (hasStateChanged(state)) {
-                updateDeep(state)
-                field = appState
-
-                if (appState.hasChildren) {
-                    appState.children.forEach { child ->
-                        child?.let { it ->
-                            notifySubscribers(it as S)
+                if (updateDeep(state)) {
+                    field = appState
+                    if (appState.hasChildren) {
+                        appState.children.forEach { child ->
+                            child?.let { it ->
+                                notifySubscribers(it as S)
+                            }
                         }
                     }
                 }
@@ -251,10 +251,14 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     // TODO: test it
-    private fun updateDeep(toUpdate: S) {
+    private fun updateDeep(toUpdate: S): Boolean {
         val found = lookUpFor(toUpdate)
-        val copy = getDeepCopy(toUpdate, EmptyState() as S)
-        getDeepCopy(copy, found) // update references reusing deepCopy
+        if (isNotDeepEquals(found, toUpdate)) {
+            val copy = getDeepCopy(toUpdate, EmptyState() as S)
+            getDeepCopy(copy, found) // update references reusing deepCopy
+            return true
+        }
+        return false
     }
 
     /** when your app depends on other state, lookup for it in the app state tree and return a copy of it of an EmptyState */
