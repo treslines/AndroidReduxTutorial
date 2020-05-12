@@ -133,7 +133,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private fun notifyMultiStateSubscribers(state: AppState) {
         multiStateObservers.forEach { outer ->
             for (inner in outer.observe()) {
-                if (inner::class.java.name == state::class.java.name) {
+                if (hasSameName(state, inner) || hasSameId(state, inner)) {
                     outer.onChange(getAppState())
                     break // if matched, no need to keep running, go directly to next "outer" observer
                 }
@@ -143,7 +143,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     private fun notifySimpleStateSubscribers(state: AppState) {
         simpleStateObservers.forEach {
-            if (state::class.java.name == it.observe()::class.java.name) {
+            if (hasSameName(state, it.observe()) || hasSameId(state, it.observe())) {
                 it.onChange(getAppState())
             }
         }
@@ -151,13 +151,16 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     private fun notifyConditionalStateSubscribers(state: AppState) {
         conditionStateObservers.forEach {
-            if (state::class.java.name == it.observe()::class.java.name) {
+            if (hasSameName(state, it.observe()) || hasSameId(state, it.observe())) {
                 if (it.match().invoke(getAppState())) {
                     it.onChange(getAppState())
                 }
             }
         }
     }
+
+    private fun hasSameName(left: AppState, right: AppState) = left::class.java.name == right::class.java.name
+    private fun hasSameId(left: AppState, right: AppState) = left.id == right.id
 
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
@@ -176,7 +179,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun dispatch(action: Action<S>) = chain[0].apply(getAppState(), action, chain, 0, this)
 
     /** the app's current state tree */
-    override fun getAppState() = getDeepCopy(appState, EmptyState() as S)
+    override fun getAppState() = getDeepCopy(appState, AppState("EmptyState") as S)
 
     /** way android components subscribe to a state they are interested in */
     override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
@@ -192,9 +195,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
     override fun getDeepCopy(source: S, destination: S): S {
-        // this method is one of the most powerful method in the redux concept of immutability.
-        // it avoids wrong usage by programmers and critical, unexpected side effects besides
-        // better usability while reducing states. You do not have to worry about copying them anymore.
         copyDeep(source, destination)
         return destination
     }
@@ -227,7 +227,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     // TODO: test it
-    private fun isNotDeepEquals(state: S, incoming: S): Boolean {
+    fun isNotDeepEquals(state: S, incoming: S): Boolean {
         val noEquals = (
                 state.id != incoming.id ||
                         state.isRoot != incoming.isRoot ||
@@ -250,6 +250,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         return noEquals
     }
 
+    fun isDeepEquals(state: S, incoming: S): Boolean {
+        return !isNotDeepEquals(state, incoming)
+    }
+
     // TODO: test it
     private fun updateDeep(toUpdate: S): Boolean {
         val found = lookUpFor(toUpdate)
@@ -270,6 +274,14 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
+    fun lookUp(stateId: String): S {
+        val found = traverse(appState, stateId)
+        return when (found.id) {
+            stateId -> getDeepCopy(found, EmptyState() as S)
+            else -> found
+        }
+    }
+
     /** look up for a specific state in app state tree and return a reference to it or an EmptyState */
     // TODO: test it
     private fun lookUpFor(state: S): S {
@@ -281,7 +293,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
      * with its underlying states if any or an EmptyState
      */
     private fun traverse(state: S, name: String): S {
-        if (state::class.java.name == name) {
+        if (state::class.java.name == name || state.id == name) {
             return state
         } else if (state.hasChildren) {
             state.children.forEach {

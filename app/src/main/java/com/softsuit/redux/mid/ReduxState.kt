@@ -8,7 +8,7 @@ package com.softsuit.redux.mid
  */
 
 // UI-Actions: For each action, there is its corresponding state
-class CounterState : AppState(id = "Counter State")
+class CounterState(id: String = "CounterState") : AppState(id = id)
 
 // Search Middleware Actions: For each action, there is its corresponding state
 class SearchResultState : AppState(id = "Search Result State")
