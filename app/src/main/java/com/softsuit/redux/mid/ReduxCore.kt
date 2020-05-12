@@ -168,6 +168,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // prevent null AppState in case a reducer does something wrong (intentionally or not)
         // TODO: test it
         reduced?.let {
+            match.clear()
             if (isNotDeepEquals(lookUpFor(reduced), reduced)) {
                 updateDeep(reduced)
             }
@@ -203,6 +204,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private fun copyDeep(original: S, copy: S) {
         copy.id = original.id
         copy.isRoot = original.isRoot
+
         if (original.hasData) {
             copy.data = original.data
         }
@@ -216,17 +218,18 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     // TODO: test it
-    private fun hasStateChanged(incoming: S): Boolean {
+    fun hasStateChanged(incoming: S): Boolean {
         return when (val matchedState = lookUpFor(incoming)) {
             is EmptyState -> false
             else -> {
                 // appStateRef =  matchedState // save ref temporally for faster update and notification later
+                match.clear()
                 isNotDeepEquals(matchedState, incoming)
             }
         }
     }
 
-    // TODO: test it
+    var match = mutableListOf<Boolean>()
     fun isNotDeepEquals(state: S, incoming: S): Boolean {
         val noEquals = (
                 state.id != incoming.id ||
@@ -237,7 +240,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                         state.children.size != incoming.children.size
                 )
         when (noEquals) {
-            true -> return noEquals
+            true -> {
+                match.add(true)
+                return noEquals
+            }
             else -> {
                 if (incoming.hasChildren) {
                     incoming.children.forEachIndexed { index, outer ->
@@ -246,17 +252,22 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 }
             }
         }
+        if (match.isNotEmpty()) {
+            return match[0]
+        }
         // appStateRef = EmptyState() as S // reset ref if equals - nothing to update or notify
         return noEquals
     }
 
     fun isDeepEquals(state: S, incoming: S): Boolean {
+        match.clear()
         return !isNotDeepEquals(state, incoming)
     }
 
     // TODO: test it
     private fun updateDeep(toUpdate: S): Boolean {
         val found = lookUpFor(toUpdate)
+        match.clear()
         if (isNotDeepEquals(found, toUpdate)) {
             val copy = getDeepCopy(toUpdate, EmptyState() as S)
             getDeepCopy(copy, found) // update references reusing deepCopy
@@ -266,8 +277,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     /** when your app depends on other state, lookup for it in the app state tree and return a copy of it of an EmptyState */
-    // TODO: test it
     override fun lookUp(state: S): S {
+        traverseEnd.clear()
         return when (val found = traverse(appState, state::class.java.name)) {
             is EmptyState -> found
             else -> getDeepCopy(found, EmptyState() as S)
@@ -275,6 +286,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     fun lookUp(stateId: String): S {
+        traverseEnd.clear()
         val found = traverse(appState, stateId)
         return when (found.id) {
             stateId -> getDeepCopy(found, EmptyState() as S)
@@ -283,8 +295,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     /** look up for a specific state in app state tree and return a reference to it or an EmptyState */
-    // TODO: test it
     private fun lookUpFor(state: S): S {
+        traverseEnd.clear()
         return traverse(appState, state::class.java.name)
     }
 
@@ -292,13 +304,18 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
      * traverses the whole state tree returning the matched state
      * with its underlying states if any or an EmptyState
      */
+    private val traverseEnd = mutableListOf<S>()
     private fun traverse(state: S, name: String): S {
         if (state::class.java.name == name || state.id == name) {
+            traverseEnd.add(state)
             return state
         } else if (state.hasChildren) {
             state.children.forEach {
                 traverse(it as S, name)
             }
+        }
+        if (traverseEnd.isNotEmpty()) {
+            return traverseEnd[0]
         }
         return EmptyState() as S
     }
