@@ -45,7 +45,7 @@ class StoreUnitTest {
     }
 
     @Test
-    fun createComplexNestedState_checkCopiedStateContent_success() {
+    fun createComplexNestedState_copyDeep_success() {
 
         val c1 = AppState(id = "Child 1")
         val c2 = AppState(id = "Child 2")
@@ -78,7 +78,7 @@ class StoreUnitTest {
     }
 
     @Test
-    fun lookupForSomeNestedState_success() {
+    fun createSpecificNestedState_lookUpForIt_success() {
         val c1 = AppState(id = "Child 1")
         val c2 = AppState(id = "Child 2")
         val c3 = AppState(id = "Child 3", data = "Child 3 data")
@@ -144,23 +144,25 @@ class StoreUnitTest {
         }
         store.subscribeConditionalState(observer = aConditionalCounterStateObserver)
 
-        store.reduce(object : Action<AppState> {
+        // change existing state
+        store.dispatch(object : Action<AppState> {
             override fun reduce(old: AppState): AppState {
-                if (old.isRoot && old.hasChildren) {
+                if (old.isRoot && old.hasChildren()) {
                     old.children[1].data = "child 2 changed"
                 }
                 return old
             }
         })
 
-        store.reduce(object : Action<AppState> {
-            override fun reduce(old: AppState): AppState {
-                if (old.isRoot && old.hasChildren) {
-                    old.children.add(MyState())
-                }
-                return old
-            }
-        })
+        // and new state to AppState tree
+//        store.reduce(object : Action<AppState> {
+//            override fun reduce(old: AppState): AppState {
+//                if (old.isRoot && old.hasChildren) {
+//                    old.children.add(MyState())
+//                }
+//                return old
+//            }
+//        })
 
     }
 

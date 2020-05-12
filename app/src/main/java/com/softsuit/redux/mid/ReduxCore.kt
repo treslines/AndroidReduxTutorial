@@ -73,10 +73,10 @@ open class AppState(
     var id: String,
     var data: String? = null,
     var children: MutableList<AppState> = mutableListOf(),
-    var hasChildren: Boolean = children.isNotEmpty(),
-    var isRoot: Boolean = false,
-    var hasData: Boolean = data != null
+    var isRoot: Boolean = false
 ) : State {
+    fun hasData(): Boolean = data != null
+    fun hasChildren(): Boolean = children.isNotEmpty()
     /**
      * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
@@ -105,7 +105,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             if (hasStateChanged(state)) {
                 if (updateDeep(state)) {
                     field = appState
-                    if (appState.hasChildren) {
+                    if (appState.hasChildren()) {
                         appState.children.forEach { child ->
                             child?.let { it ->
                                 notifySubscribers(it as S)
@@ -121,7 +121,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         notifyMultiStateSubscribers(state)
         notifySimpleStateSubscribers(state)
         notifyConditionalStateSubscribers(state)
-        while (state.hasChildren) {
+        while (state.hasChildren()) {
             state.children.forEach { child ->
                 child?.let { it ->
                     notifySubscribers(it as S)
@@ -177,7 +177,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
-    override fun dispatch(action: Action<S>) = chain[0].apply(getAppState(), action, chain, 0, this)
+    override fun dispatch(action: Action<S>) {
+        if (chain != null && chain.isNotEmpty()) {
+            chain[0].apply(getAppState(), action, chain, 0, this)
+        } else {
+            reduce(action)
+        }
+    }
 
     /** the app's current state tree */
     override fun getAppState() = getDeepCopy(appState, AppState("EmptyState") as S)
@@ -200,15 +206,14 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         return destination
     }
 
-    // TODO: test it
     private fun copyDeep(original: S, copy: S) {
         copy.id = original.id
         copy.isRoot = original.isRoot
 
-        if (original.hasData) {
+        if (original.hasData()) {
             copy.data = original.data
         }
-        if (original.hasChildren) {
+        if (original.hasChildren()) {
             original.children.forEach {
                 val empty = EmptyState()
                 copy.children.add(empty)
@@ -234,9 +239,9 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         val noEquals = (
                 state.id != incoming.id ||
                         state.isRoot != incoming.isRoot ||
-                        state.hasData != incoming.hasData ||
+                        state.hasData() != incoming.hasData() ||
                         state.data != incoming.data ||
-                        state.hasChildren != incoming.hasChildren ||
+                        state.hasChildren() != incoming.hasChildren() ||
                         state.children.size != incoming.children.size
                 )
         when (noEquals) {
@@ -245,16 +250,16 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 return noEquals
             }
             else -> {
-                if (incoming.hasChildren) {
+                if (incoming.hasChildren()) {
+                    if (match.isNotEmpty()) return match[0]
                     incoming.children.forEachIndexed { index, outer ->
+                        if (match.isNotEmpty()) return match[0]
                         isNotDeepEquals(outer as S, state.children[index] as S)
                     }
                 }
             }
         }
-        if (match.isNotEmpty()) {
-            return match[0]
-        }
+        if (match.isNotEmpty()) return match[0]
         // appStateRef = EmptyState() as S // reset ref if equals - nothing to update or notify
         return noEquals
     }
@@ -309,14 +314,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         if (state::class.java.name == name || state.id == name) {
             traverseEnd.add(state)
             return state
-        } else if (state.hasChildren) {
+        } else if (state.hasChildren()) {
             state.children.forEach {
+                if (traverseEnd.isNotEmpty()) return traverseEnd[0]
                 traverse(it as S, name)
             }
         }
-        if (traverseEnd.isNotEmpty()) {
-            return traverseEnd[0]
-        }
+        if (traverseEnd.isNotEmpty()) return traverseEnd[0]
         return EmptyState() as S
     }
 
