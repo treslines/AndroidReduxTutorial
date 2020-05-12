@@ -103,13 +103,12 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
             if (hasStateChanged(state)) {
-                if (updateDeep(state)) {
-                    field = appState
-                    if (appState.hasChildren()) {
-                        appState.children.forEach { child ->
-                            child?.let { it ->
-                                notifySubscribers(it as S)
-                            }
+                updateDeep(state)
+                field = appState
+                if (appState.hasChildren()) {
+                    appState.children.forEach { child ->
+                        child?.let { it ->
+                            notifySubscribers(it as S)
                         }
                     }
                 }
@@ -164,14 +163,25 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
-        val reduced: S = action.reduce(getAppState())
+        val appStateCopy = getAppState()
+        val newState: S = action.reduce(appStateCopy)
         // prevent null AppState in case a reducer does something wrong (intentionally or not)
         // TODO: test it
-        reduced?.let {
-            match.clear()
-            if (isNotDeepEquals(lookUpFor(reduced), reduced)) {
-                updateDeep(reduced)
-            }
+        if (newState != null) { // es kommt immer eine ganze state tree zurueck
+            updateDeep(newState)
+//            match.clear()
+//            if (isNotDeepEquals(appState, newState)) {
+//                updateDeep(newState)
+//            }
+//            val appStateRef = lookUpReference(newState)
+//            if (newState.id == appStateRef.id) {
+//                if (isNotDeepEquals(appStateRef, newState)) {
+//                    updateDeep(newState)
+//                } // else deepEquals, nothing to update
+//            } else {
+//                // does not exist in structure, add it to it
+//                // TODO: new state, needed to be added to app state tree
+//            }
         }
         return getDeepCopy(appState, EmptyState() as S)
     }
@@ -224,7 +234,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     // TODO: test it
     fun hasStateChanged(incoming: S): Boolean {
-        return when (val matchedState = lookUpFor(incoming)) {
+        return when (val matchedState = lookUpReference(incoming)) {
             is EmptyState -> false
             else -> {
                 // appStateRef =  matchedState // save ref temporally for faster update and notification later
@@ -271,11 +281,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     // TODO: test it
     private fun updateDeep(toUpdate: S): Boolean {
-        val found = lookUpFor(toUpdate)
+        val found = lookUpReference(toUpdate)
         match.clear()
-        if (isNotDeepEquals(found, toUpdate)) {
-            val copy = getDeepCopy(toUpdate, EmptyState() as S)
-            getDeepCopy(copy, found) // update references reusing deepCopy
+        if (isNotDeepEquals(appState, toUpdate)) {
+            getDeepCopy(toUpdate, appState) // update references reusing deepCopy
             return true
         }
         return false
@@ -300,7 +309,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     /** look up for a specific state in app state tree and return a reference to it or an EmptyState */
-    private fun lookUpFor(state: S): S {
+    private fun lookUpReference(state: S): S {
         traverseEnd.clear()
         return traverse(appState, state::class.java.name)
     }
