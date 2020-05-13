@@ -155,14 +155,14 @@ class StoreUnitTest {
         })
 
         // and new state to AppState tree, diese action weiss wo sich einfuegen soll
-//        store.reduce(object : Action<AppState> {
-//            override fun reduce(old: AppState): AppState {
-//                if (old.isRoot && old.hasChildren) {
-//                    old.children.add(MyState())
-//                }
-//                return old
-//            }
-//        })
+        store.dispatch(object : Action<AppState> {
+            override fun reduce(old: AppState): AppState {
+                if (old.isRoot && old.hasChildren()) {
+                    old.children.add(MyState())
+                }
+                return old
+            }
+        })
 
     }
 

@@ -221,7 +221,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                         updated = true
                         assignDeep(it as S, inner as S)
                     }
-
                 }
                 if (!updated) {
                     appState.children.add(it)
