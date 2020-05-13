@@ -107,7 +107,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 field = appState
                 if (appState.hasChildren()) {
                     appState.children.forEach { child ->
-                        child?.let { it ->
+                        child?.let {
                             println(it.id)
                             notifySubscribers(it as S)
                         }
@@ -135,7 +135,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         multiStateObservers.forEach { outer ->
             for (inner in outer.observe()) {
                 if (hasSameName(state, inner) || hasSameId(state, inner)) {
-                    outer.onChange(getAppState())
+                    val copied = getDeepCopy(state as S, AppState("EmptyState") as S)
+                    outer.onChange(copied)
                     break // if matched, no need to keep running, go directly to next "outer" observer
                 }
             }
@@ -145,7 +146,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private fun notifySimpleStateSubscribers(state: AppState) {
         simpleStateObservers.forEach {
             if (hasSameName(state, it.observe()) || hasSameId(state, it.observe())) {
-                it.onChange(getAppState())
+                val copied = getDeepCopy(state as S, AppState("EmptyState") as S)
+                it.onChange(copied)
             }
         }
     }
@@ -153,8 +155,9 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private fun notifyConditionalStateSubscribers(state: AppState) {
         conditionStateObservers.forEach {
             if (hasSameName(state, it.observe()) || hasSameId(state, it.observe())) {
-                if (it.match().invoke(getAppState())) {
-                    it.onChange(getAppState())
+                val copied = getDeepCopy(state as S, AppState("EmptyState") as S)
+                if (it.match().invoke(copied)) {
+                    it.onChange(copied)
                 }
             }
         }
@@ -209,12 +212,20 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         if (toAssign.hasChildren()) {
             // check if contains not, if not, add
 
-
+            var updated = false
             // else just update values
             toAssign.children.forEach {
-                val empty = AppState("EmptyState")
-                appState.children.add(empty)
-                copyDeep(it as S, empty as S)
+                updated = false
+                appState.children.forEach { inner ->
+                    if (it.id == inner.id) {
+                        updated = true
+                        assignDeep(it as S, inner as S)
+                    }
+
+                }
+                if (!updated) {
+                    appState.children.add(it)
+                }
             }
         }
     }
