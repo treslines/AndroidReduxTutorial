@@ -132,7 +132,7 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 class DebugAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
-        val stateName = it.children!!::class.java.simpleName
+        val stateName = it.child!!::class.java.simpleName
         //Log.d(stateName, it.jsonData[stateName].toString())
         AppState(id = description, data = "LinkedHashMap(it.jsonData)")
     }
@@ -148,7 +148,7 @@ class LogAction() : Action<AppState> {
 
     private val reducer: Reducer<AppState> = {
         Log.d("logging", "AppData: ${it.id}")
-        Log.d("logging", "AppData>Internal: ${it.children}")
+        Log.d("logging", "AppData>Internal: ${it.child}")
         it
     }
 

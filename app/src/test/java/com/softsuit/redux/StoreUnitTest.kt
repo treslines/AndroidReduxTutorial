@@ -53,27 +53,27 @@ class StoreUnitTest {
         val c4 = AppState(id = "Child 4")
         val c5 = AppState(id = "Child 5")
         val c6 = AppState(id = "Child 6")
-        val c7 = AppState(id = "Child 7", children = mutableListOf(c4, c5, c6))
-        val c8 = AppState(id = "Child 8", children = mutableListOf(c7))
+        val c7 = AppState(id = "Child 7", child = mutableListOf(c4, c5, c6))
+        val c8 = AppState(id = "Child 8", child = mutableListOf(c7))
         val c9 = AppState(id = "Child 9")
         val c0 = AppState(id = "Child 0", data = "Child 0 data")
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, children = children)
+        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
         val actual = store.getAppState()
-        assertEquals(6, actual.children.size)
-        assertEquals(0, actual.children[0].children.size)
-        assertEquals(0, actual.children[1].children.size)
-        assertEquals(0, actual.children[2].children.size)
-        assertEquals("Child 3 data", actual.children[2].data)
-        assertEquals(1, actual.children[3].children.size)
-        assertEquals(3, actual.children[3].children[0].children.size)
-        assertEquals(0, actual.children[3].children[0].children[0].children.size)
-        assertEquals(0, actual.children[3].children[0].children[1].children.size)
-        assertEquals(0, actual.children[3].children[0].children[2].children.size)
-        assertEquals(0, actual.children[4].children.size)
-        assertEquals(0, actual.children[5].children.size)
-        assertEquals("Child 0 data", actual.children[5].data)
+        assertEquals(6, actual.child.size)
+        assertEquals(0, actual.child[0].child.size)
+        assertEquals(0, actual.child[1].child.size)
+        assertEquals(0, actual.child[2].child.size)
+        assertEquals("Child 3 data", actual.child[2].data)
+        assertEquals(1, actual.child[3].child.size)
+        assertEquals(3, actual.child[3].child[0].child.size)
+        assertEquals(0, actual.child[3].child[0].child[0].child.size)
+        assertEquals(0, actual.child[3].child[0].child[1].child.size)
+        assertEquals(0, actual.child[3].child[0].child[2].child.size)
+        assertEquals(0, actual.child[4].child.size)
+        assertEquals(0, actual.child[5].child.size)
+        assertEquals("Child 0 data", actual.child[5].data)
 
     }
 
@@ -85,28 +85,27 @@ class StoreUnitTest {
         val c4 = AppState(id = "Child 4")
         val c5 = AppState(id = "Child 5")
         val c6 = AppState(id = "Child 6")
-        val c7 = AppState(id = "Child 7", children = mutableListOf(c4, c5, c6))
-        val c8 = AppState(id = "Child 8", children = mutableListOf(c7))
+        val c7 = AppState(id = "Child 7", child = mutableListOf(c4, c5, c6))
+        val c8 = AppState(id = "Child 8", child = mutableListOf(c7))
         val c9 = AppState(id = "Child 9")
         val c0 = SearchResultState()
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, children = children)
+        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
         var actual = store.lookUp("Child 3")
         assertNotEquals(c3, actual)
-        assertEquals(0, actual.children.size)
+        assertEquals(0, actual.child.size)
         assertEquals("Child 3 data", actual.data)
 
         actual = store.lookUp(c0)
         assertNotEquals(c0, actual)
-        assertEquals(0, actual.children.size)
+        assertEquals(0, actual.child.size)
         assertEquals(null, actual.data)
         assertEquals("Search Result State", actual.id)
     }
 
     @Test
-    fun createInitialState_changeSomething_checkHasChanced_success() {
-        class MyState() : AppState(id = "MyState")
+    fun registerConditionalObserver_changeSomething_observerTriggered_success() {
 
         val c1 = AppState(id = "Child 1")
         val c2 = AppState(id = "Child 2")
@@ -114,22 +113,14 @@ class StoreUnitTest {
         val c4 = AppState(id = "Child 4")
         val c5 = AppState(id = "Child 5")
         val c6 = AppState(id = "Child 6")
-        val c7 = AppState(id = "Child 7", children = mutableListOf(c4, c5, c6))
-        val c8 = AppState(id = "Child 8", children = mutableListOf(c7))
+        val c7 = AppState(id = "Child 7", child = mutableListOf(c4, c5, c6))
+        val c8 = AppState(id = "Child 8", child = mutableListOf(c7))
         val c9 = AppState(id = "Child 9")
         val c0 = SearchResultState()
 
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, children = children)
+        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
-
-        val aSimpleSearchResultStateObserver = object : SimpleStateObserver<AppState> {
-            override fun observe() = MyState()
-            override fun onChange(state: AppState) {
-                assertEquals("MyState", state.id)
-            }
-        }
-        store.subscribeSimpleState(aSimpleSearchResultStateObserver)
 
         val aCondition: ConditionReducer<AppState> = {
             it.data != null && it.id == "Child 2"
@@ -144,21 +135,48 @@ class StoreUnitTest {
         }
         store.subscribeConditionalState(observer = aConditionalCounterStateObserver)
 
-        // change existing state
         store.dispatch(object : Action<AppState> {
             override fun reduce(old: AppState): AppState {
-                if (old.isRoot && old.hasChildren()) {
-                    old.children[1].data = "child 2 changed"
+                if (old.isRoot && old.hasChild()) {
+                    old.child[1].data = "child 2 changed"
                 }
                 return old
             }
         })
+    }
+
+    @Test
+    fun registerSimpleObserver_addNewStateToTree_observerTriggered_success() {
+        class MyState() : AppState(id = "MyState")
+
+        val c1 = AppState(id = "Child 1")
+        val c2 = AppState(id = "Child 2")
+        val c3 = AppState(id = "Child 3", data = "Child 3 data")
+        val c4 = AppState(id = "Child 4")
+        val c5 = AppState(id = "Child 5")
+        val c6 = AppState(id = "Child 6")
+        val c7 = AppState(id = "Child 7", child = mutableListOf(c4, c5, c6 /* MyState will be added here */))
+        val c8 = AppState(id = "Child 8", child = mutableListOf(c7))
+        val c9 = AppState(id = "Child 9")
+        val c0 = SearchResultState()
+
+        var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
+        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
+        val store = AppStore(initialState = rootState)
+
+        val aSimpleSearchResultStateObserver = object : SimpleStateObserver<AppState> {
+            override fun observe() = MyState()
+            override fun onChange(state: AppState) {
+                assertEquals("MyState", state.id)
+            }
+        }
+        store.subscribeSimpleState(aSimpleSearchResultStateObserver)
 
         // and new state to AppState tree, diese action weiss wo sich einfuegen soll
         store.dispatch(object : Action<AppState> {
             override fun reduce(old: AppState): AppState {
-                if (old.isRoot && old.hasChildren()) {
-                    old.children.add(MyState())
+                if (old.isRoot && old.hasChild()) {
+                    old.child[3].child[0].child[2].child.add(MyState())
                 }
                 return old
             }

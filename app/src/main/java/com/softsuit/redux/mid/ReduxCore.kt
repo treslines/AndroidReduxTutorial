@@ -75,16 +75,22 @@ interface Store<S : State> {
 open class AppState(
     var id: String,
     var data: String? = null,
-    var children: MutableList<AppState> = mutableListOf(),
+    var child: MutableList<AppState> = mutableListOf(),
     var isRoot: Boolean = false
 ) : State {
     fun hasData(): Boolean = data != null
-    fun hasChildren(): Boolean = children.isNotEmpty()
+    fun hasChild(): Boolean = child.isNotEmpty()
     /**
      * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
      */
-    fun <T> getData(modelType: Class<T>): T? = Gson().fromJson(Gson().toJson(data).toString(), modelType)
+    fun <T> getData(modelType: Class<T>): T? {
+        return try {
+            Gson().fromJson(Gson().toJson(data).toString(), modelType)
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
 
 /** state returned by lookUpFor(state) if not match found */
@@ -106,8 +112,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             if (hasStateChanged(state)) {
                 updateDeep(state)
                 field = appState
-                if (appState.hasChildren()) {
-                    appState.children.forEach { child ->
+                if (appState.hasChild()) {
+                    appState.child.forEach { child ->
                         child?.let {
                             println(it.id)
                             notifySubscribers(it as S)
@@ -121,8 +127,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         notifyMultiStateSubscribers(state)
         notifySimpleStateSubscribers(state)
         notifyConditionalStateSubscribers(state)
-        if (state.hasChildren()) {
-            state.children.forEach { child ->
+        if (state.hasChild()) {
+            state.child.forEach { child ->
                 child?.let { it ->
                     println(it.id)
                     notifySubscribers(it as S)
@@ -209,21 +215,19 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         if (toAssign.hasData()) {
             appState.data = toAssign.data
         }
-        if (toAssign.hasChildren()) {
-            // check if contains not, if not, add
-
+        if (toAssign.hasChild()) {
             var updated = false
             // else just update values
-            toAssign.children.forEach {
+            toAssign.child.forEach {
                 updated = false
-                appState.children.forEach { inner ->
+                appState.child.forEach { inner ->
                     if (it.id == inner.id) {
                         updated = true
                         assignDeep(it as S, inner as S)
                     }
                 }
                 if (!updated) {
-                    appState.children.add(it)
+                    appState.child.add(it)
                 }
             }
         }
@@ -236,16 +240,15 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         if (original.hasData()) {
             copy.data = original.data
         }
-        if (original.hasChildren()) {
-            original.children.forEach {
+        if (original.hasChild()) {
+            original.child.forEach {
                 val empty = AppState("EmptyState")
-                copy.children.add(empty)
+                copy.child.add(empty)
                 copyDeep(it as S, empty as S)
             }
         }
     }
 
-    // TODO: test it
     fun hasStateChanged(incoming: S): Boolean {
         match.clear()
         return isNotDeepEquals(appState, incoming)
@@ -258,8 +261,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                         state.isRoot != incoming.isRoot ||
                         state.hasData() != incoming.hasData() ||
                         state.data != incoming.data ||
-                        state.hasChildren() != incoming.hasChildren() ||
-                        state.children.size != incoming.children.size
+                        state.hasChild() != incoming.hasChild() ||
+                        state.child.size != incoming.child.size
                 )
         when (noEquals) {
             true -> {
@@ -267,11 +270,11 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 return noEquals
             }
             else -> {
-                if (incoming.hasChildren()) {
+                if (incoming.hasChild()) {
                     if (match.isNotEmpty()) return match[0]
-                    incoming.children.forEachIndexed { index, outer ->
+                    incoming.child.forEachIndexed { index, outer ->
                         if (match.isNotEmpty()) return match[0]
-                        isNotDeepEquals(outer as S, state.children[index] as S)
+                        isNotDeepEquals(outer as S, state.child[index] as S)
                     }
                 }
             }
@@ -287,7 +290,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     // TODO: test it
     private fun updateDeep(toUpdate: S) {
-        assignDeep(toUpdate, appState) // update references reusing deepCopy
+        assignDeep(toUpdate, appState)
     }
 
     /** when your app depends on other state, lookup for it in the app state tree and return a copy of it or an EmptyState */
@@ -323,8 +326,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         if (state::class.java.name == name || state.id == name) {
             traverseEnd.add(state)
             return state
-        } else if (state.hasChildren()) {
-            state.children.forEach {
+        } else if (state.hasChild()) {
+            state.child.forEach {
                 if (traverseEnd.isNotEmpty()) return traverseEnd[0]
                 traverse(it as S, name)
             }
@@ -361,12 +364,14 @@ interface Middleware<S : AppState> {
         val nextIndex = chainIndex + 1
         if (isEndOfChain(nextIndex, chain)) {
             store.reduce(action).also {
-                Log.i("ReduxCore", "Store reduced action=${action.getName()}")
+                if (store.isLogModeOn()) {
+                    Log.i("Redux", "Store reduced action=${action.getName()}")
+                }
             }
         } else {
             chain[nextIndex].apply(state, action, chain, nextIndex, store).also {
                 if (store.isLogModeOn()) {
-                    Log.i("ReduxCore", "Middleware=${chain[nextIndex].getName()} dispatched state=${store.getStateName()} with action=${action.getName()}")
+                    Log.i("Redux", "Middleware=${chain[nextIndex].getName()} dispatched state=${store.getStateName()} with action=${action.getName()}")
                 }
             }
         }

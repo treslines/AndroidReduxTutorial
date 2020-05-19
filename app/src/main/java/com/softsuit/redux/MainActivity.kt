@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(
                         this@MainActivity,
-                        "Result: ${state.children!!::class.java.simpleName}",
+                        "Result: ${state.child!!::class.java.simpleName}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
