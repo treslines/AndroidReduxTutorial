@@ -78,7 +78,7 @@ class StoreUnitTest {
     }
 
     @Test
-    fun createSpecificNestedState_lookUpForIt_success() {
+    fun createSpecificNestedState_lookUpForItOverId_success() {
         val c1 = AppState(id = "Child 1")
         val c2 = AppState(id = "Child 2")
         val c3 = AppState(id = "Child 3", data = "Child 3 data")

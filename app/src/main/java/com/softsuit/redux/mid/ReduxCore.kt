@@ -61,6 +61,7 @@ interface Store<S : State> {
     fun unsubscribeConditionalState(observer: ConditionStateObserver<S>): Boolean
 
     fun lookUp(state: S): S
+    fun lookUp(stateId: String): S
     fun getAppState(): S
     fun getDeepCopy(source: S, destination: S): S
 
@@ -293,7 +294,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         assignDeep(toUpdate, appState)
     }
 
-    /** when your app depends on other state, lookup for it in the app state tree and return a copy of it or an EmptyState */
+    /** when your app depends on other state, lookup for it over state types in the app state tree and return a copy of it or an EmptyState */
     override fun lookUp(state: S): S {
         traverseEnd.clear()
         return when (val found = traverse(appState, state::class.java.name)) {
@@ -302,19 +303,14 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
-    fun lookUp(stateId: String): S {
+    /** when your app depends on other states, lookup for it over ids in the app state tree and return a copy of it or an EmptyState */
+    override fun lookUp(stateId: String): S {
         traverseEnd.clear()
         val found = traverse(appState, stateId)
         return when (found.id) {
             stateId -> getDeepCopy(found, EmptyState() as S)
             else -> found
         }
-    }
-
-    /** look up for a specific state in app state tree and return a reference to it or an EmptyState */
-    private fun lookUpReference(state: S): S {
-        traverseEnd.clear()
-        return traverse(appState, state::class.java.name)
     }
 
     /**
