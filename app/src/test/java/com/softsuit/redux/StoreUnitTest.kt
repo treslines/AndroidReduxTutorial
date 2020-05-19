@@ -29,7 +29,7 @@ class StoreUnitTest {
     @Test
     fun getDeepCopy_success() {
 
-        val store = DI.reduxStore
+        val store = DI.store
         val actual = store.getAppState()
         val expected = AppState(id = "Redux Tutorial App", isRoot = true)
         assertEquals(true, store.isDeepEquals(actual, expected))
@@ -38,7 +38,7 @@ class StoreUnitTest {
     @Test
     fun getDeepCopy_isNotEqualsOriginal_success() {
 
-        val store = DI.reduxStore
+        val store = DI.store
         val actual = store.getAppState()
         val expected = AppState(id = "Redux Tutorial App", isRoot = true)
         assertEquals(false, actual == expected)

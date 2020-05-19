@@ -66,6 +66,9 @@ interface Store<S : State> {
 
     /** for traceability and debugging only */
     fun getStateName(): String
+
+    fun isLogModeOn(): Boolean
+    fun setLogMode(onOff: Boolean)
 }
 
 /** the app's state tree in a serializable manner (easier to store and re-store it) */
@@ -88,15 +91,13 @@ open class AppState(
 class EmptyState() : AppState(id = "EmptyState")
 
 /** represents the single source of truth in your andorid app. */
-class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf()) : Store<S> {
+class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf(), private var logMode: Boolean = false) : Store<S> {
 
     /** android component subscriptions. */
     private val conditionStateObservers = mutableSetOf<ConditionStateObserver<S>>()
     private val simpleStateObservers = mutableSetOf<SimpleStateObserver<S>>()
     private val multiStateObservers = mutableSetOf<MultiStateObserver<S>>()
 
-    /** state reference for faster store update and subscriber notification. Used in isNotDeepEquals() */
-    private var appStateRef: S = EmptyState() as S
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
         // state change happens most of the time sequentially. Synchronized just to be aware
@@ -113,7 +114,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                         }
                     }
                 }
-
             }
         }
 
@@ -290,7 +290,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         assignDeep(toUpdate, appState) // update references reusing deepCopy
     }
 
-    /** when your app depends on other state, lookup for it in the app state tree and return a copy of it of an EmptyState */
+    /** when your app depends on other state, lookup for it in the app state tree and return a copy of it or an EmptyState */
     override fun lookUp(state: S): S {
         traverseEnd.clear()
         return when (val found = traverse(appState, state::class.java.name)) {
@@ -334,6 +334,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     override fun getStateName(): String = appState::class.java.name
+    override fun isLogModeOn() = logMode
+    override fun setLogMode(onOff: Boolean) {
+        logMode = onOff
+    }
 }
 
 /**
@@ -361,7 +365,9 @@ interface Middleware<S : AppState> {
             }
         } else {
             chain[nextIndex].apply(state, action, chain, nextIndex, store).also {
-                Log.i("ReduxCore", "Middleware=${chain[nextIndex].getName()} dispatched state=${store.getStateName()} with action=${action.getName()}")
+                if (store.isLogModeOn()) {
+                    Log.i("ReduxCore", "Middleware=${chain[nextIndex].getName()} dispatched state=${store.getStateName()} with action=${action.getName()}")
+                }
             }
         }
     }

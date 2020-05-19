@@ -5,7 +5,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.softsuit.redux.mid.*
-import com.softsuit.redux.mid.DI.reduxStore
+import com.softsuit.redux.mid.DI.store
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -15,21 +15,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // --------------------------------------------------------------------------
         // 1. register any component interested into counter state changes
-        val aSimpleCounterStateObserver = object : SimpleStateObserver<AppState> {
+        // --------------------------------------------------------------------------
+        val aSimpleCounterObserver = object : SimpleStateObserver<AppState> {
             override fun observe() = CounterState()
             override fun onChange(state: AppState) {
                 val data: CounterStateModel? = state.getData(CounterStateModel::class.java)
                 data?.let { xIdTxtCounter.text = it.name }
             }
         }
-        reduxStore.subscribeSimpleState(aSimpleCounterStateObserver)
+        store.subscribeSimpleState(aSimpleCounterObserver)
 
-        // 2. dispatch reset counter action
-        reduxStore.dispatch(ResetCounterAction("Reset Counter Event"))
-
-        // 3. register for SearchResultState
-        val aSimpleSearchResultStateObserver = object : SimpleStateObserver<AppState> {
+        // --------------------------------------------------------------------------
+        // 2. register for SearchResultState
+        // --------------------------------------------------------------------------
+        val aSimpleSearchResultState = object : SimpleStateObserver<AppState> {
             override fun observe() = SearchResultState()
             override fun onChange(state: AppState) {
                 runOnUiThread {
@@ -41,14 +42,16 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        reduxStore.subscribeSimpleState(aSimpleSearchResultStateObserver)
+        store.subscribeSimpleState(aSimpleSearchResultState)
 
-        // 4. Register a conditional state
+        // --------------------------------------------------------------------------
+        // 3. register a conditional state
+        // --------------------------------------------------------------------------
         val aCondition: ConditionReducer<AppState> = {
             //it.jsonData["CounterState"] == 2
             true
         }
-        val aConditionalCounterStateObserver = object : ConditionStateObserver<AppState> {
+        val aConditionalCounterObserver = object : ConditionStateObserver<AppState> {
             override fun match() = aCondition
             override fun observe() = CounterState()
             override fun onChange(state: AppState) {
@@ -59,9 +62,11 @@ class MainActivity : AppCompatActivity() {
                 ).show()
             }
         }
-        reduxStore.subscribeConditionalState(observer = aConditionalCounterStateObserver)
+        store.subscribeConditionalState(observer = aConditionalCounterObserver)
 
-        // 5. Register a multi state
+        // --------------------------------------------------------------------------
+        // 4. register a multi state
+        // --------------------------------------------------------------------------
         val aMultiStateObserver = object : MultiStateObserver<AppState> {
             override fun observe() = listOf(SearchForKeywordState(), SearchResultState())
             override fun onChange(state: AppState) {
@@ -74,17 +79,26 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        reduxStore.subscribeMultiState(observer = aMultiStateObserver)
+        store.subscribeMultiState(observer = aMultiStateObserver)
+
+        // --------------------------------------------------------------------------
+        // 5. dispatch initial reset counter action
+        // --------------------------------------------------------------------------
+        store.dispatch(ResetCounterAction("Reset Counter Event"))
 
     }
 
+    // --------------------------------------------------------------------------
     // 6. dispatch actions on user input
-    fun decrement(view: View) = reduxStore.reduce(DecrementCounterAction("Decrement Counter Event"))
+    // --------------------------------------------------------------------------
+    fun decrement(view: View) = store.reduce(DecrementCounterAction("Decrement Counter Event"))
 
-    fun increment(view: View) = reduxStore.reduce(IncrementCounterAction("Increment Counter Event"))
+    fun increment(view: View) = store.reduce(IncrementCounterAction("Increment Counter Event"))
 
+    // --------------------------------------------------------------------------
     // 7. dispatch middleware action on user input
-    fun search(view: View) = reduxStore.dispatch(SearchingAction("Searching Event"))
+    // --------------------------------------------------------------------------
+    fun search(view: View) = store.dispatch(SearchingAction("Searching Event"))
 
-    fun debug(view: View) = reduxStore.dispatch(DebugAction())
+    fun debug(view: View) = store.dispatch(DebugAction())
 }
