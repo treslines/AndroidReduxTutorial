@@ -73,7 +73,7 @@ interface Store<S : State> {
 
 /** the app's state tree in a serializable manner (easier to store and re-store it) */
 open class AppState(
-    var id: String,
+    var id: String = "EmptyState",
     var data: String? = null,
     var child: MutableList<AppState> = mutableListOf(),
     var isRoot: Boolean = false

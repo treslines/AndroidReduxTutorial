@@ -8,7 +8,7 @@ object DI {
         SearchApiMiddleware(),
         DebugMiddleware()
     )
-    private val rootState = AppState(id = "Redux Tutorial App", isRoot = true)
+    private val rootState = AppState(id = "RootState", isRoot = true)
     val store = AppStore(initialState = rootState, chain = middlewareChain, logMode = true)
 }
 
