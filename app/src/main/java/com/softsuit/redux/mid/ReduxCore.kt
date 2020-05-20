@@ -52,13 +52,13 @@ interface Store<S : State> {
     fun reduce(action: Action<S>): S
     fun dispatch(action: Action<S>)
 
-    fun subscribeMultiState(observer: MultiStateObserver<S>): Boolean
-    fun subscribeSimpleState(observer: SimpleStateObserver<S>): Boolean
-    fun subscribeConditionalState(observer: ConditionStateObserver<S>): Boolean
+    fun subscribe(observer: MultiStateObserver<S>): Boolean
+    fun subscribe(observer: SimpleStateObserver<S>): Boolean
+    fun subscribe(observer: ConditionStateObserver<S>): Boolean
 
-    fun unsubscribeMultiState(observer: MultiStateObserver<S>): Boolean
-    fun unsubscribeSimpleState(observer: SimpleStateObserver<S>): Boolean
-    fun unsubscribeConditionalState(observer: ConditionStateObserver<S>): Boolean
+    fun unsubscribe(observer: MultiStateObserver<S>): Boolean
+    fun unsubscribe(observer: SimpleStateObserver<S>): Boolean
+    fun unsubscribe(observer: ConditionStateObserver<S>): Boolean
 
     fun lookUp(state: S): S
     fun lookUp(stateId: String): S
@@ -67,7 +67,6 @@ interface Store<S : State> {
 
     /** for traceability and debugging only */
     fun getStateName(): String
-
     fun isLogModeOn(): Boolean
     fun setLogMode(onOff: Boolean)
 }
@@ -81,6 +80,25 @@ open class AppState(
 ) : State {
     fun hasData(): Boolean = data != null
     fun hasChild(): Boolean = child.isNotEmpty()
+    override fun toString(): String = Gson().toJson(this)
+    // those methods should be in the store, since only the store can change it
+    fun hasChanged(state: AppState): Boolean = state.toString() != this.toString()
+
+    fun insertOrUpdate(state: AppState) {
+        val actualState = this.toString()
+        if (actualState.contains(state.id)) {
+            // update
+        } else {
+            // add
+        }
+    }
+
+    fun remove(state: AppState) {
+        val actualState = this.toString()
+        if (actualState.contains(state.id)) {
+            // remove it
+        }
+    }
     /**
      * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
@@ -192,16 +210,16 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun getAppState() = getDeepCopy(appState, AppState("EmptyState") as S)
 
     /** way android components subscribe to a state they are interested in */
-    override fun subscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
+    override fun subscribe(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
 
-    override fun subscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
-    override fun subscribeConditionalState(observer: ConditionStateObserver<S>) = conditionStateObservers.add(element = observer)
+    override fun subscribe(observer: SimpleStateObserver<S>) = simpleStateObservers.add(element = observer)
+    override fun subscribe(observer: ConditionStateObserver<S>) = conditionStateObservers.add(element = observer)
 
     /** whenever a component wants to unsubscribe */
-    override fun unsubscribeMultiState(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
+    override fun unsubscribe(observer: MultiStateObserver<S>) = multiStateObservers.remove(element = observer)
 
-    override fun unsubscribeSimpleState(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
-    override fun unsubscribeConditionalState(observer: ConditionStateObserver<S>) = conditionStateObservers.remove(element = observer)
+    override fun unsubscribe(observer: SimpleStateObserver<S>) = simpleStateObservers.remove(element = observer)
+    override fun unsubscribe(observer: ConditionStateObserver<S>) = conditionStateObservers.remove(element = observer)
 
     /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
     override fun getDeepCopy(source: S, destination: S): S {

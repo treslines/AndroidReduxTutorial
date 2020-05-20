@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
                 data?.let { xIdTxtCounter.text = it.name }
             }
         }
-        store.subscribeSimpleState(aSimpleCounterObserver)
+        store.subscribe(aSimpleCounterObserver)
 
         // --------------------------------------------------------------------------
         // 2. register for SearchResultState
@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        store.subscribeSimpleState(aSimpleSearchResultState)
+        store.subscribe(aSimpleSearchResultState)
 
         // --------------------------------------------------------------------------
         // 3. register a conditional state
@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
                 ).show()
             }
         }
-        store.subscribeConditionalState(observer = aConditionalCounterObserver)
+        store.subscribe(observer = aConditionalCounterObserver)
 
         // --------------------------------------------------------------------------
         // 4. register a multi state
@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        store.subscribeMultiState(observer = aMultiStateObserver)
+        store.subscribe(observer = aMultiStateObserver)
 
         // --------------------------------------------------------------------------
         // 5. dispatch initial reset counter action
