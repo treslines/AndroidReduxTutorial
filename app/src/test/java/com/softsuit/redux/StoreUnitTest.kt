@@ -1,10 +1,12 @@
 package com.softsuit.redux
 
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.softsuit.redux.mid.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
+
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -199,22 +201,20 @@ class StoreUnitTest {
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
         val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
 
-        val t =
+        val appStateString =
             "{\"id\":\"Redux Tutorial App\",\"child\":[{\"id\":\"Child 1\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 2\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 3\",\"data\":\"Child 3 data\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 8\",\"child\":[{\"id\":\"Child 7\",\"child\":[{\"id\":\"Child 4\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 5\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 6\",\"child\":[],\"isRoot\":false}],\"isRoot\":false}],\"isRoot\":false},{\"id\":\"Child 9\",\"child\":[],\"isRoot\":false},{\"id\":\"Search Result State\",\"child\":[],\"isRoot\":false}],\"isRoot\":true}"
 
-        if (t.contains(c3.id)) { // annahme remove cmd
+        if (appStateString.contains(c3.id)) { // annahme remove cmd
             // get all ids, remove one by one, the remaining one(s) is the one to remove
-            val l = t.length
-            val r = t.replace(Gson().toJson(c3), "")
-            if (r.length != l) {
+            if (appStateString.replace(Gson().toJson(c3), "").length != appStateString.length) {
                 // can remove
             }
         }
 
-        if (t.contains(c3.id)) { // in state enthalten (annahme c3 hat sich geändert)
+        if (appStateString.contains(c3.id)) { // in state enthalten (annahme c3 hat sich geändert)
             val c3String = Gson().toJson(c3)
-            val original = t.length
-            val r = t.replace(c3String, "")
+            val original = appStateString.length
+            val r = appStateString.replace(c3String, "")
             if ((r.length - original) == c3String.length) {
                 // hat sich nicht geändert
             }
@@ -225,6 +225,38 @@ class StoreUnitTest {
         println(c3.toString())
 
 
+    }
+
+    private fun update(state: AppState) {
+
+    }
+
+    private fun remove(state: AppState) {
+        var appStateString =
+            "{\"id\":\"Redux Tutorial App\",\"child\":[{\"id\":\"Child 1\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 2\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 3\",\"data\":\"Child 3 data\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 8\",\"child\":[{\"id\":\"Child 7\",\"child\":[{\"id\":\"Child 4\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 5\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 6\",\"child\":[],\"isRoot\":false}],\"isRoot\":false}],\"isRoot\":false},{\"id\":\"Child 9\",\"child\":[],\"isRoot\":false},{\"id\":\"Search Result State\",\"child\":[],\"isRoot\":false}],\"isRoot\":true}"
+
+        if (appStateString.contains(state.id)) { // app state contains state to remove
+
+            if (appStateString.replace(Gson().toJson(state), "").length != appStateString.length) {
+                // can remove
+                // {"id":"Child 1","child":[],"isRoot":false},
+                // {"id":"Child 1","child":[],"isRoot":true},
+                appStateString = appStateString.replace(Gson().toJson(state), "").replace(",,", ",")
+            } else { // exist but is not equals
+                // to remove
+                // pay attention
+                // {"id":"Child 1","child":[],"isRoot":false},
+                // {"id":"Child 1","child":[],"isRoot":true},
+                // get all ids, remove one by one, the remaining one(s) is the one to remove
+                val json = "{\"key1\":\"val\", \"key2\":\"val\"}"
+
+                val parser = JsonParser()
+                val jsonObject = parser.parse(json).asJsonObject
+
+                val ids = jsonObject.keySet().filter { it == "id" }
+
+            }
+        }
     }
 
 }

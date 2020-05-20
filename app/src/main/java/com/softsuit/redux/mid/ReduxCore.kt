@@ -112,9 +112,6 @@ open class AppState(
     }
 }
 
-/** state returned by lookUpFor(state) if not match found */
-class EmptyState() : AppState(id = "EmptyState")
-
 /** represents the single source of truth in your andorid app. */
 class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware<S>> = listOf(), private var logMode: Boolean = false) : Store<S> {
 
@@ -194,7 +191,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
         appState = action.reduce(getAppState())
-        return getDeepCopy(appState, EmptyState() as S)
+        return getDeepCopy(appState, AppState(id = "EmptyState") as S)
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
@@ -315,9 +312,10 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     /** when your app depends on other state, lookup for it over state types in the app state tree and return a copy of it or an EmptyState */
     override fun lookUp(state: S): S {
         traverseEnd.clear()
-        return when (val found = traverse(appState, state::class.java.name)) {
-            is EmptyState -> found
-            else -> getDeepCopy(found, EmptyState() as S)
+        val found = traverse(appState, state::class.java.name)
+        return when (found.id == "EmptyState") {
+            true -> found
+            else -> getDeepCopy(found, AppState(id = "EmptyState") as S)
         }
     }
 
@@ -326,7 +324,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         traverseEnd.clear()
         val found = traverse(appState, stateId)
         return when (found.id) {
-            stateId -> getDeepCopy(found, EmptyState() as S)
+            stateId -> getDeepCopy(found, AppState(id = "EmptyState") as S)
             else -> found
         }
     }
@@ -347,7 +345,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             }
         }
         if (traverseEnd.isNotEmpty()) return traverseEnd[0]
-        return EmptyState() as S
+        return AppState(id = "EmptyState") as S
     }
 
     override fun getStateName(): String = appState::class.java.name
