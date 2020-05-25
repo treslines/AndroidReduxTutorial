@@ -291,6 +291,24 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
+    private fun assignDeep(toAssign: String) {
+        val newState = Gson().fromJson<AppState>(toAssign, AppState::class.java)
+        appState = newState as S
+    }
+
+    private fun copyDeep() = appState.toString()
+    private fun hasChanged(incoming: String): Boolean = appState.toString() != incoming
+    private fun isNotDeepEquals(incoming: String): Boolean = hasChanged(incoming)
+    private fun isDeepEquals(incoming: String) = hasChanged(incoming)
+    private fun updateDeep(incoming: String) {
+        val toUpdate = Gson().fromJson<AppState>(incoming, AppState::class.java)
+        appState = toUpdate as S
+    }
+
+    private fun lookUpBy(id: String): S {
+        return appState // TODO
+    }
+
     private fun copyDeep(original: S, copy: S) {
         copy.id = original.id
         copy.isRoot = original.isRoot
