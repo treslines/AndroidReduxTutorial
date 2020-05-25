@@ -1,7 +1,6 @@
 package com.softsuit.redux
 
 import com.google.gson.Gson
-import com.google.gson.JsonParser
 import com.softsuit.redux.mid.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -227,36 +226,56 @@ class StoreUnitTest {
 
     }
 
-    private fun update(state: AppState) {
-
-    }
-
-    private fun remove(state: AppState) {
+    @Test
+    fun insert() {
         var appStateString =
             "{\"id\":\"Redux Tutorial App\",\"child\":[{\"id\":\"Child 1\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 2\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 3\",\"data\":\"Child 3 data\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 8\",\"child\":[{\"id\":\"Child 7\",\"child\":[{\"id\":\"Child 4\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 5\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 6\",\"child\":[],\"isRoot\":false}],\"isRoot\":false}],\"isRoot\":false},{\"id\":\"Child 9\",\"child\":[],\"isRoot\":false},{\"id\":\"Search Result State\",\"child\":[],\"isRoot\":false}],\"isRoot\":true}"
+        val res = insert(appStateString, "Child 1", "{\"id\":\"Child A\",\"child\":[],\"isRoot\":false}")
+        println(res)
+    }
 
-        if (appStateString.contains(state.id)) { // app state contains state to remove
 
-            if (appStateString.replace(Gson().toJson(state), "").length != appStateString.length) {
-                // can remove
-                // {"id":"Child 1","child":[],"isRoot":false},
-                // {"id":"Child 1","child":[],"isRoot":true},
-                appStateString = appStateString.replace(Gson().toJson(state), "").replace(",,", ",")
+    fun remove(toRemove: AppState): String {
+        var appStateString =
+            "{\"id\":\"Redux Tutorial App\",\"child\":[{\"id\":\"Child 1}\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 2\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 3\",\"data\":\"Child 3 data\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 8\",\"child\":[{\"id\":\"Child 7\",\"child\":[{\"id\":\"Child 4\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 5\",\"child\":[],\"isRoot\":false},{\"id\":\"Child 6\",\"child\":[],\"isRoot\":false}],\"isRoot\":false}],\"isRoot\":false},{\"id\":\"Child 9\",\"child\":[],\"isRoot\":false},{\"id\":\"Search Result State\",\"child\":[],\"isRoot\":false}],\"isRoot\":true}"
+        return if (appStateString.contains(toRemove.id)) { // app state contains state to remove
+            if (appStateString.replace(Gson().toJson(toRemove), "").length != appStateString.length) {
+                appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
             } else { // exist but is not equals
-                // to remove
-                // pay attention
-                // {"id":"Child 1","child":[],"isRoot":false},
-                // {"id":"Child 1","child":[],"isRoot":true},
-                // get all ids, remove one by one, the remaining one(s) is the one to remove
-                val json = "{\"key1\":\"val\", \"key2\":\"val\"}"
-
-                val parser = JsonParser()
-                val jsonObject = parser.parse(json).asJsonObject
-
-                val ids = jsonObject.keySet().filter { it == "id" }
-
+                val target = findTarget(appStateString, toRemove.id)
+                appStateString.replace(target, "").replace(",,", ",")
             }
+        } else {
+            appStateString
         }
+    }
+
+    private fun findTarget(appStateString: String, targetId: String): String {
+        val startPosOffset = 7
+        val idIndex = appStateString.indexOf(targetId)
+        val searchString = appStateString.substring((idIndex - startPosOffset), appStateString.length)
+        var end = 0
+        var start = 0
+        var endIndex = 0
+        var currentIndex = 0
+        for (c in searchString) {
+            when (c) {
+                '{' -> start++
+                '}' -> end++
+            }
+            if (start == end) {
+                endIndex = currentIndex + 1
+                break
+            }
+            currentIndex++
+        }
+        return searchString.substring(0, endIndex)
+    }
+
+    private fun insert(appStateString: String, targetId: String, newState: String): String {
+        val placeholder = appStateString.replace(findTarget(appStateString, targetId), "@ph@")
+        val targetPlaceholder = findTarget(appStateString, targetId).replaceFirst("[", "[@ph@")
+        return placeholder.replace("@ph@", targetPlaceholder.replace("@ph@", "$newState,")).replace(",]", "]")
     }
 
 }
