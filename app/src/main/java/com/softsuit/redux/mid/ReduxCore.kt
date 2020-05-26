@@ -104,6 +104,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** current and only app state tree. single source of truth. */
     private var appState: S = initialState
+    private var mirrorAppState: S = Gson().fromJson<AppState>(appState.toString(), AppState::class.java) as S
         // state change happens most of the time sequentially. Synchronized just to be aware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
@@ -236,6 +237,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         appState = newState as S
     }
 
+    private fun hasRootStateChanged(): Boolean = appState.toString() != mirrorAppState.toString()
     private fun copyDeep() = appState.toString()
     private fun hasChanged(incoming: String): Boolean = appState.toString() != incoming
     private fun isNotDeepEquals(incoming: String): Boolean = hasChanged(incoming)
