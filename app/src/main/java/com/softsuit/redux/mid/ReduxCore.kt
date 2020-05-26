@@ -81,66 +81,6 @@ open class AppState(
     fun hasData(): Boolean = data != null
     fun hasChild(): Boolean = child.isNotEmpty()
     override fun toString(): String = Gson().toJson(this)
-    // those methods should be in the store, since only the store can change it
-    fun hasChanged(state: AppState): Boolean = state.toString() != this.toString()
-
-    fun insertOrUpdate(toUpdate: AppState): String {
-        val actualState = this.toString()
-        return if (actualState.contains(toUpdate.id)) {
-            // fast update by replacing whole object
-            val appStateString = this.toString()
-            val placeholder = appStateString.replace(findTarget(appStateString, toUpdate.id), "@ph@")
-            placeholder.replace("@ph@", Gson().toJson(toUpdate))
-        } else {
-            // add
-            val appStateString = this.toString()
-            val target = findTarget(appStateString, toUpdate.id)
-            val placeholder = appStateString.replace(target, "@ph@")
-            val targetPlaceholder = target.replaceFirst("[", "[@ph@")
-            val inserted = targetPlaceholder.replace("@ph@", "${toUpdate.toString()},")
-            val updated = placeholder.replace("@ph@", inserted)
-            return updated.replace(",]", "]")
-        }
-    }
-
-    private fun remove(toRemove: AppState): String {
-        val appStateString = this.toString()
-        return if (appStateString.contains(toRemove.id)) {
-            if (appStateString.replace(Gson().toJson(toRemove), "").length != appStateString.length) {
-                // object to remove is identical, just remove it
-                appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
-            } else {
-                // object exists but is not equals
-                appStateString.replace(findTarget(appStateString, toRemove.id), "").replace(",,", ",")
-            }
-        } else {
-            // nothing to remove
-            appStateString
-        }
-    }
-
-    private fun findTarget(appStateString: String, targetId: String): String {
-        val startPosOffset = 7
-        val idIndex = appStateString.indexOf(targetId)
-        val searchString = appStateString.substring((idIndex - startPosOffset), appStateString.length)
-        var end = 0
-        var start = 0
-        var endIndex = 0
-        var currentIndex = 0
-        for (c in searchString) {
-            when (c) {
-                '{' -> start++
-                '}' -> end++
-            }
-            if (start == end) {
-                endIndex = currentIndex + 1
-                break
-            }
-            currentIndex++
-        }
-        return searchString.substring(0, endIndex)
-    }
-
     /**
      * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
@@ -305,8 +245,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         appState = toUpdate as S
     }
 
-    private fun lookUpBy(id: String): S {
-        return appState // TODO
+    fun lookUpBy(state: S): S {
+        val targetString = findTarget(appState.toString(), state.id)
+        return if (!targetString.isNullOrEmpty()) {
+            Gson().fromJson<AppState>(targetString, AppState::class.java) as S
+        } else {
+            AppState() as S
+        }
     }
 
     private fun copyDeep(original: S, copy: S) {
@@ -413,6 +358,73 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun setLogMode(onOff: Boolean) {
         logMode = onOff
     }
+
+    // those methods should be in the store, since only the store can change it
+    fun hasChanged(state: AppState): Boolean = state.toString() != appState.toString()
+
+    fun insertOrUpdate(toUpdate: AppState): String {
+        val actualState = this.toString()
+        return if (actualState.contains(toUpdate.id)) {
+            // fast update by replacing whole object
+            val appStateString = this.toString()
+            val placeholder = appStateString.replace(findTarget(appStateString, toUpdate.id), "@ph@")
+            placeholder.replace("@ph@", Gson().toJson(toUpdate))
+        } else {
+            // add
+            val appStateString = this.toString()
+            val target = findTarget(appStateString, toUpdate.id)
+            val placeholder = appStateString.replace(target, "@ph@")
+            val targetPlaceholder = target.replaceFirst("[", "[@ph@")
+            val inserted = targetPlaceholder.replace("@ph@", "${toUpdate.toString()},")
+            val updated = placeholder.replace("@ph@", inserted)
+            return updated.replace(",]", "]")
+        }
+    }
+
+    private fun remove(toRemove: AppState): String {
+        val appStateString = this.toString()
+        return if (appStateString.contains(toRemove.id)) {
+            if (appStateString.replace(Gson().toJson(toRemove), "").length != appStateString.length) {
+                // object to remove is identical, just remove it
+                appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
+            } else {
+                // object exists but is not equals
+                appStateString.replace(findTarget(appStateString, toRemove.id), "").replace(",,", ",")
+            }
+        } else {
+            // nothing to remove
+            appStateString
+        }
+    }
+
+    private fun findTarget(appStateString: String, targetId: String): String {
+        val startPosOffset = 7
+        val noMatchFound = -1
+        val idIndex = appStateString.indexOf(targetId)
+        return if (idIndex <= noMatchFound) {
+            val searchString = appStateString.substring((idIndex - startPosOffset), appStateString.length)
+            var end = 0
+            var start = 0
+            var endIndex = 0
+            var currentIndex = 0
+            for (c in searchString) {
+                when (c) {
+                    '{' -> start++
+                    '}' -> end++
+                }
+                if (start == end) {
+                    endIndex = currentIndex + 1
+                    break
+                }
+                currentIndex++
+            }
+            searchString.substring(0, endIndex)
+        } else {
+            ""
+        }
+    }
+
+
 }
 
 /**
