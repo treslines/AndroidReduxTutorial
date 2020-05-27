@@ -60,10 +60,7 @@ interface Store<S : State> {
     fun unsubscribe(observer: SimpleStateObserver<S>): Boolean
     fun unsubscribe(observer: ConditionStateObserver<S>): Boolean
 
-    fun lookUp(state: S): S
-    fun lookUp(stateId: String): S
     fun getAppState(): S
-    fun getDeepCopy(source: S, destination: S): S
 
     /** for traceability and debugging only */
     fun getStateName(): String
@@ -74,11 +71,11 @@ interface Store<S : State> {
 /** the app's state tree in a serializable manner (easier to store and re-store it) */
 open class AppState(
     var id: String = "EmptyState",
-    var data: String? = null,
+    var data: String = "",
     var child: MutableList<AppState> = mutableListOf(),
     var isRoot: Boolean = false
 ) : State {
-    fun hasData(): Boolean = data != null
+    fun hasData(): Boolean = data.isNotEmpty()
     fun hasChild(): Boolean = child.isNotEmpty()
     override fun toString(): String = Gson().toJson(this)
     /**
@@ -103,14 +100,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private val multiStateObservers = mutableSetOf<MultiStateObserver<S>>()
 
     /** current and only app state tree. single source of truth. */
-    private var appState: S = initialState
+    private var appState: S = copyDeep(initialState)
     private var mirrorAppState: S = Gson().fromJson<AppState>(appState.toString(), AppState::class.java) as S
         // state change happens most of the time sequentially. Synchronized just to be aware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
-            if (hasStateChanged(state)) {
-                updateDeep(state)
-                field = appState
+            if (hasChanged(state)) {
+                field = Gson().fromJson<AppState>(state.toString(), AppState::class.java) as S
                 if (appState.hasChild()) {
                     appState.child.forEach { child ->
                         child?.let {
@@ -139,9 +135,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private fun notifyMultiStateSubscribers(state: AppState) {
         multiStateObservers.forEach { outer ->
             for (inner in outer.observe()) {
-                if (hasSameName(state, inner) || hasSameId(state, inner)) {
-                    val copied = getDeepCopy(state as S, AppState("EmptyState") as S)
-                    outer.onChange(copied)
+                if (hasSameId(state, inner)) {
+                    outer.onChange(copyDeep(state as S))
                     break // if matched, no need to keep running, go directly to next "outer" observer
                 }
             }
@@ -150,17 +145,16 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     private fun notifySimpleStateSubscribers(state: AppState) {
         simpleStateObservers.forEach {
-            if (hasSameName(state, it.observe()) || hasSameId(state, it.observe())) {
-                val copied = getDeepCopy(state as S, AppState("EmptyState") as S)
-                it.onChange(copied)
+            if (hasSameId(state, it.observe())) {
+                it.onChange(copyDeep(state as S))
             }
         }
     }
 
     private fun notifyConditionalStateSubscribers(state: AppState) {
         conditionStateObservers.forEach {
-            if (hasSameName(state, it.observe()) || hasSameId(state, it.observe())) {
-                val copied = getDeepCopy(state as S, AppState("EmptyState") as S)
+            if (hasSameId(state, it.observe())) {
+                val copied = copyDeep(state as S)
                 if (it.match().invoke(copied)) {
                     it.onChange(copied)
                 }
@@ -168,13 +162,13 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
-    private fun hasSameName(left: AppState, right: AppState) = left::class.java.name == right::class.java.name
     private fun hasSameId(left: AppState, right: AppState) = left.id == right.id
 
     /** reduces any action passed in causing the current app state to change or not */
     override fun reduce(action: Action<S>): S {
         appState = action.reduce(getAppState())
-        return getDeepCopy(appState, AppState(id = "EmptyState") as S)
+        return copyDeep(appState)
+        //return getDeepCopy(appState, AppState(id = "EmptyState") as S)
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
@@ -187,7 +181,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     /** the app's current state tree */
-    override fun getAppState() = getDeepCopy(appState, AppState("EmptyState") as S)
+    // override fun getAppState() = getDeepCopy(appState, AppState("EmptyState") as S)
+    override fun getAppState() = copyDeep(appState)
 
     /** way android components subscribe to a state they are interested in */
     override fun subscribe(observer: MultiStateObserver<S>) = multiStateObservers.add(element = observer)
@@ -202,53 +197,17 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun unsubscribe(observer: ConditionStateObserver<S>) = conditionStateObservers.remove(element = observer)
 
     /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
-    override fun getDeepCopy(source: S, destination: S): S {
-        copyDeep(source, destination)
-        return destination
-    }
+    private fun copyDeep(toCopy: S): S = Gson().fromJson<AppState>(toCopy.toString(), AppState::class.java) as S
 
-    private fun assignDeep(toAssign: S, appState: S) {
-        appState.id = toAssign.id
-        appState.isRoot = toAssign.isRoot
-
-        if (toAssign.hasData()) {
-            appState.data = toAssign.data
-        }
-        if (toAssign.hasChild()) {
-            var updated = false
-            // else just update values
-            toAssign.child.forEach {
-                updated = false
-                appState.child.forEach { inner ->
-                    if (it.id == inner.id) {
-                        updated = true
-                        assignDeep(it as S, inner as S)
-                    }
-                }
-                if (!updated) {
-                    appState.child.add(it)
-                }
-            }
-        }
-    }
-
-    private fun assignDeep(toAssign: String) {
-        val newState = Gson().fromJson<AppState>(toAssign, AppState::class.java)
-        appState = newState as S
-    }
-
-    private fun hasRootStateChanged(): Boolean = appState.toString() != mirrorAppState.toString()
-    private fun copyDeep() = appState.toString()
-    private fun hasChanged(incoming: String): Boolean = appState.toString() != incoming
-    private fun isNotDeepEquals(incoming: String): Boolean = hasChanged(incoming)
-    private fun isDeepEquals(incoming: String) = hasChanged(incoming)
+    fun isDeepEquals(incoming: S) = !hasChanged(incoming)
     private fun updateDeep(incoming: String) {
         val toUpdate = Gson().fromJson<AppState>(incoming, AppState::class.java)
         appState = toUpdate as S
     }
 
+    /** return empty state if no match found */
     fun lookUpBy(state: S): S {
-        val targetString = findTarget(appState.toString(), state.id)
+        val targetString = findState(appState.toString(), state.id)
         return if (!targetString.isNullOrEmpty()) {
             Gson().fromJson<AppState>(targetString, AppState::class.java) as S
         } else {
@@ -256,125 +215,25 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
-    private fun copyDeep(original: S, copy: S) {
-        copy.id = original.id
-        copy.isRoot = original.isRoot
-
-        if (original.hasData()) {
-            copy.data = original.data
-        }
-        if (original.hasChild()) {
-            original.child.forEach {
-                val empty = AppState("EmptyState")
-                copy.child.add(empty)
-                copyDeep(it as S, empty as S)
-            }
-        }
-    }
-
-    fun hasStateChanged(incoming: S): Boolean {
-        match.clear()
-        return isNotDeepEquals(appState, incoming)
-    }
-
-    var match = mutableListOf<Boolean>()
-    fun isNotDeepEquals(state: S, incoming: S): Boolean {
-        val noEquals = (
-                state.id != incoming.id ||
-                        state.isRoot != incoming.isRoot ||
-                        state.hasData() != incoming.hasData() ||
-                        state.data != incoming.data ||
-                        state.hasChild() != incoming.hasChild() ||
-                        state.child.size != incoming.child.size
-                )
-        when (noEquals) {
-            true -> {
-                match.add(true)
-                return noEquals
-            }
-            else -> {
-                if (incoming.hasChild()) {
-                    if (match.isNotEmpty()) return match[0]
-                    incoming.child.forEachIndexed { index, outer ->
-                        if (match.isNotEmpty()) return match[0]
-                        isNotDeepEquals(outer as S, state.child[index] as S)
-                    }
-                }
-            }
-        }
-        if (match.isNotEmpty()) return match[0]
-        return noEquals
-    }
-
-    fun isDeepEquals(state: S, incoming: S): Boolean {
-        match.clear()
-        return !isNotDeepEquals(state, incoming)
-    }
-
-    // TODO: test it
-    private fun updateDeep(toUpdate: S) {
-        assignDeep(toUpdate, appState)
-    }
-
-    /** when your app depends on other state, lookup for it over state types in the app state tree and return a copy of it or an EmptyState */
-    override fun lookUp(state: S): S {
-        traverseEnd.clear()
-        val found = traverse(appState, state::class.java.name)
-        return when (found.id == "EmptyState") {
-            true -> found
-            else -> getDeepCopy(found, AppState(id = "EmptyState") as S)
-        }
-    }
-
-    /** when your app depends on other states, lookup for it over ids in the app state tree and return a copy of it or an EmptyState */
-    override fun lookUp(stateId: String): S {
-        traverseEnd.clear()
-        val found = traverse(appState, stateId)
-        return when (found.id) {
-            stateId -> getDeepCopy(found, AppState(id = "EmptyState") as S)
-            else -> found
-        }
-    }
-
-    /**
-     * traverses the whole state tree returning the matched state
-     * with its underlying states if any or an EmptyState
-     */
-    private val traverseEnd = mutableListOf<S>()
-    private fun traverse(state: S, name: String): S {
-        if (state::class.java.name == name || state.id == name) {
-            traverseEnd.add(state)
-            return state
-        } else if (state.hasChild()) {
-            state.child.forEach {
-                if (traverseEnd.isNotEmpty()) return traverseEnd[0]
-                traverse(it as S, name)
-            }
-        }
-        if (traverseEnd.isNotEmpty()) return traverseEnd[0]
-        return AppState(id = "EmptyState") as S
-    }
-
-    override fun getStateName(): String = appState::class.java.name
+    override fun getStateName(): String = appState.id
     override fun isLogModeOn() = logMode
     override fun setLogMode(onOff: Boolean) {
         logMode = onOff
     }
 
-    // those methods should be in the store, since only the store can change it
-    fun hasChanged(state: AppState): Boolean = state.toString() != appState.toString()
+    private fun hasChanged(state: AppState): Boolean = state.toString() != appState.toString()
 
-    fun insertOrUpdate(toUpdate: AppState): String {
+    private fun insertOrUpdate(toUpdate: AppState): String {
         val actualState = this.toString()
         return if (actualState.contains(toUpdate.id)) {
             // fast update by replacing whole object
             val appStateString = this.toString()
-            val placeholder = appStateString.replace(findTarget(appStateString, toUpdate.id), "@ph@")
+            val placeholder = appStateString.replace(findState(appStateString, toUpdate.id), "@ph@")
             placeholder.replace("@ph@", Gson().toJson(toUpdate))
         } else {
             // add
             val appStateString = this.toString()
-            val target = findTarget(appStateString, toUpdate.id)
+            val target = findState(appStateString, toUpdate.id)
             val placeholder = appStateString.replace(target, "@ph@")
             val targetPlaceholder = target.replaceFirst("[", "[@ph@")
             val inserted = targetPlaceholder.replace("@ph@", "${toUpdate.toString()},")
@@ -391,7 +250,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
                 appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
             } else {
                 // object exists but is not equals
-                appStateString.replace(findTarget(appStateString, toRemove.id), "").replace(",,", ",")
+                appStateString.replace(findState(appStateString, toRemove.id), "").replace(",,", ",")
             }
         } else {
             // nothing to remove
@@ -399,11 +258,11 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         }
     }
 
-    private fun findTarget(appStateString: String, targetId: String): String {
+    private fun findState(appStateString: String, stateId: String): String {
         val startPosOffset = 7
         val noMatchFound = -1
-        val idIndex = appStateString.indexOf(targetId)
-        return if (idIndex <= noMatchFound) {
+        val idIndex = appStateString.indexOf(stateId)
+        return if (idIndex >= noMatchFound) {
             val searchString = appStateString.substring((idIndex - startPosOffset), appStateString.length)
             var end = 0
             var start = 0
@@ -425,7 +284,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
             ""
         }
     }
-
 
 }
 
