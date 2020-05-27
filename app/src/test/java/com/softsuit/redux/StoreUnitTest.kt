@@ -7,25 +7,22 @@ import org.junit.Test
 
 
 /**
- * Example local unit test, which will execute on the development machine (host).
- *
- * See [testing documentation](http://d.android.com/tools/testing).
+ * OO Redux Implementation Test
  */
 class StoreUnitTest {
 
     @Test
     fun getDeepCopy_success() {
         val store = DI.store
-        val actual = store.getAppState()
-        val expected = AppState(id = "Redux Tutorial App", isRoot = true)
-        assertEquals(true, store.isDeepEquals(actual))
+        val expected = AppState(id = "RootState", isRoot = true)
+        assertEquals(true, store.isDeepEquals(expected))
     }
 
     @Test
     fun getDeepCopy_isNotEqualsOriginal_success() {
         val store = DI.store
         val actual = store.getAppState()
-        val expected = AppState(id = "Redux Tutorial App", isRoot = true)
+        val expected = AppState(id = "ReduxTutorialApp", isRoot = true)
         assertEquals(false, actual == expected)
     }
 
@@ -42,7 +39,7 @@ class StoreUnitTest {
         val c9 = AppState(id = "Child 9")
         val c0 = AppState(id = "Child 0", data = "Child 0 data")
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
+        val rootState = AppState(id = "ReduxTutorialApp", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
         var actual = store.getAppState()
         assertEquals(6, actual.child.size)
@@ -79,7 +76,7 @@ class StoreUnitTest {
         val c9 = AppState(id = "Child 9")
         val c0 = SearchResultState()
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
+        val rootState = AppState(id = "ReduxTutorialApp", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
         var actual = store.lookUpBy(c3)
         assertNotEquals(c3, actual)
@@ -106,7 +103,7 @@ class StoreUnitTest {
         val c9 = AppState(id = "Child 9")
         val c0 = SearchResultState()
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
+        val rootState = AppState(id = "ReduxTutorialApp", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
 
         val aCondition: ConditionReducer<AppState> = {
@@ -146,7 +143,7 @@ class StoreUnitTest {
         val c9 = AppState(id = "Child 9")
         val c0 = SearchResultState()
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
+        val rootState = AppState(id = "ReduxTutorialApp", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
 
         val aSimpleSearchResultStateObserver = object : SimpleStateObserver<AppState> {
@@ -180,7 +177,7 @@ class StoreUnitTest {
         val c9 = AppState(id = "Child 9")
         val c0 = SearchResultState()
         var children: MutableList<AppState> = mutableListOf(c1, c2, c3, c8, c9, c0)
-        val rootState = AppState(id = "Redux Tutorial App", isRoot = true, child = children)
+        val rootState = AppState(id = "ReduxTutorialApp", isRoot = true, child = children)
         val store = AppStore(initialState = rootState)
 
         // TODO:

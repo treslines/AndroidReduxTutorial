@@ -168,7 +168,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun reduce(action: Action<S>): S {
         appState = action.reduce(getAppState())
         return copyDeep(appState)
-        //return getDeepCopy(appState, AppState(id = "EmptyState") as S)
     }
 
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
@@ -181,7 +180,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     /** the app's current state tree */
-    // override fun getAppState() = getDeepCopy(appState, AppState("EmptyState") as S)
     override fun getAppState() = copyDeep(appState)
 
     /** way android components subscribe to a state they are interested in */
@@ -200,10 +198,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     private fun copyDeep(toCopy: S): S = Gson().fromJson<AppState>(toCopy.toString(), AppState::class.java) as S
 
     fun isDeepEquals(incoming: S) = !hasChanged(incoming)
-    private fun updateDeep(incoming: String) {
-        val toUpdate = Gson().fromJson<AppState>(incoming, AppState::class.java)
-        appState = toUpdate as S
-    }
 
     /** return empty state if no match found */
     fun lookUpBy(state: S): S {
