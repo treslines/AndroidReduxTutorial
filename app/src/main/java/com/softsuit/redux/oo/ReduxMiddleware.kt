@@ -1,7 +1,7 @@
-package com.softsuit.redux.mid
+package com.softsuit.redux.oo
 
 // ------------------------------------------------------------------------------------------------
-// -------------------------------- Middleware Implementations ------------------------------------
+// Middleware Implementations
 // ------------------------------------------------------------------------------------------------
 //
 // Api calls, Asyc tasks, Computations etc.
@@ -66,7 +66,7 @@ class SearchApiMiddleware : Middleware<AppState> {
 }
 
 // ------------------------------------------------------------------------------------------------
-// ---------------------------- Util Middleware Implementations -----------------------------------
+// Util Middleware Implementations
 // ------------------------------------------------------------------------------------------------
 //
 // Log, perform common tasks, analytics etc.

@@ -1,9 +1,9 @@
-package com.softsuit.redux.mid
+package com.softsuit.redux.oo
 
 import android.util.Log
 
 // ------------------------------------------------------------------------------------------------
-// --------------------------------------- UI Actions ---------------------------------------------
+// UI Actions
 // ------------------------------------------------------------------------------------------------
 //
 // Trivial UI actions - Direct user actions with immediately response
@@ -64,7 +64,7 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
 }
 
 // ------------------------------------------------------------------------------------------------
-// ---------------------------------- Middleware Actions ------------------------------------------
+// Middleware Actions
 // ------------------------------------------------------------------------------------------------
 //
 // Side effects, api calls, db operations etc. - actions with delayed response
@@ -122,7 +122,7 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
 }
 
 // ------------------------------------------------------------------------------------------------
-// ------------------------------------- Util Actions ---------------------------------------------
+//  Util Actions 
 // ------------------------------------------------------------------------------------------------
 //
 // log, debug, perform common tasks, analytics etc.

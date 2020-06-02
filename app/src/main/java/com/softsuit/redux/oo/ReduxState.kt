@@ -1,4 +1,4 @@
-package com.softsuit.redux.mid
+package com.softsuit.redux.oo
 
 /**
  * This is the central place, where you define all your app states. Those states could be placed by its corresponding action also,
@@ -12,16 +12,14 @@ class CounterState() : AppState(id = "CounterState")
 
 // Search Middleware Actions: For each action, there is its corresponding state
 class SearchResultState : AppState(id = "SearchResultState")
-
 class SearchingState : AppState(id = "SearchingState")
 class SearchForKeywordState : AppState(id = "SearchForKeywordState")
 class WaitingForUserInputState : AppState(id = "WaitingForUserInputState")
 
 // Debug-Development actions: For each action, there is its corresponding state
-class DebugState : AppState(id = "DDebugState")
+class DebugState : AppState(id = "DebugState")
 
-// TODO: define state types here
-// TODO: Ex: SearchResultStateType
+// TODO: every state knows its data model
 class CounterStateModel(val name: String)
 
 

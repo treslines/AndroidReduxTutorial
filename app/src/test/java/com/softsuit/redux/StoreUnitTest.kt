@@ -1,6 +1,6 @@
 package com.softsuit.redux
 
-import com.softsuit.redux.mid.*
+import com.softsuit.redux.oo.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test

@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.softsuit.redux.mid.*
-import com.softsuit.redux.mid.DI.store
+import com.softsuit.redux.oo.*
+import com.softsuit.redux.oo.DI.store
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         store.subscribe(aSimpleSearchResultState)
 
         // --------------------------------------------------------------------------
-        // 3. register a conditional state
+        // 3. register a conditional state (multi condition can be done as well)
         // --------------------------------------------------------------------------
         val aCondition: ConditionReducer<AppState> = {
             //it.jsonData["CounterState"] == 2
