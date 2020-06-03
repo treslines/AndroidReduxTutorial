@@ -82,11 +82,81 @@ open class AppState(
      * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
      */
-    fun <T> getData(modelType: Class<T>): T? {
+    fun <T> getDataModel(modelType: Class<T>): T? {
         return try {
             Gson().fromJson(Gson().toJson(data).toString(), modelType)
         } catch (e: Exception) {
             null
+        }
+    }
+
+    fun <T> toDataModelJsonString(model: T): String {
+        return try {
+            Gson().toJson(model)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    fun insertOrUpdate(toUpdate: AppState): String {
+        val actualState = this.toString()
+        return if (actualState.contains(toUpdate.id)) {
+            // fast update by replacing whole object
+            val appStateString = this.toString()
+            val placeholder = appStateString.replace(findState(appStateString, toUpdate.id), "@ph@")
+            placeholder.replace("@ph@", Gson().toJson(toUpdate))
+        } else {
+            // add
+            val appStateString = this.toString()
+            val target = findState(appStateString, toUpdate.id)
+            val placeholder = appStateString.replace(target, "@ph@")
+            val targetPlaceholder = target.replaceFirst("[", "[@ph@")
+            val inserted = targetPlaceholder.replace("@ph@", "${toUpdate.toString()},")
+            val updated = placeholder.replace("@ph@", inserted)
+            return updated.replace(",]", "]")
+        }
+    }
+
+    fun remove(toRemove: AppState): String {
+        val appStateString = this.toString()
+        return if (appStateString.contains(toRemove.id)) {
+            if (appStateString.replace(Gson().toJson(toRemove), "").length != appStateString.length) {
+                // object to remove is identical, just remove it
+                appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
+            } else {
+                // object exists but is not equals
+                appStateString.replace(findState(appStateString, toRemove.id), "").replace(",,", ",")
+            }
+        } else {
+            // nothing to remove
+            appStateString
+        }
+    }
+
+    fun findState(appStateString: String, stateId: String): String {
+        val startPosOffset = 7
+        val noMatchFound = -1
+        val idIndex = appStateString.indexOf(stateId)
+        return if (idIndex >= noMatchFound) {
+            val searchString = appStateString.substring((idIndex - startPosOffset), appStateString.length)
+            var end = 0
+            var start = 0
+            var endIndex = 0
+            var currentIndex = 0
+            for (c in searchString) {
+                when (c) {
+                    '{' -> start++
+                    '}' -> end++
+                }
+                if (start == end) {
+                    endIndex = currentIndex + 1
+                    break
+                }
+                currentIndex++
+            }
+            searchString.substring(0, endIndex)
+        } else {
+            ""
         }
     }
 }
@@ -200,7 +270,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** return empty state if no match found */
     fun lookUpBy(state: S): S {
-        val targetString = findState(appState.toString(), state.id)
+        val targetString = appState.findState(appState.toString(), state.id)
         return if (!targetString.isNullOrEmpty()) {
             Gson().fromJson<AppState>(targetString, AppState::class.java) as S
         } else {
@@ -215,68 +285,6 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     private fun hasChanged(state: AppState): Boolean = state.toString() != appState.toString()
-
-    private fun insertOrUpdate(toUpdate: AppState): String {
-        val actualState = this.toString()
-        return if (actualState.contains(toUpdate.id)) {
-            // fast update by replacing whole object
-            val appStateString = this.toString()
-            val placeholder = appStateString.replace(findState(appStateString, toUpdate.id), "@ph@")
-            placeholder.replace("@ph@", Gson().toJson(toUpdate))
-        } else {
-            // add
-            val appStateString = this.toString()
-            val target = findState(appStateString, toUpdate.id)
-            val placeholder = appStateString.replace(target, "@ph@")
-            val targetPlaceholder = target.replaceFirst("[", "[@ph@")
-            val inserted = targetPlaceholder.replace("@ph@", "${toUpdate.toString()},")
-            val updated = placeholder.replace("@ph@", inserted)
-            return updated.replace(",]", "]")
-        }
-    }
-
-    private fun remove(toRemove: AppState): String {
-        val appStateString = this.toString()
-        return if (appStateString.contains(toRemove.id)) {
-            if (appStateString.replace(Gson().toJson(toRemove), "").length != appStateString.length) {
-                // object to remove is identical, just remove it
-                appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
-            } else {
-                // object exists but is not equals
-                appStateString.replace(findState(appStateString, toRemove.id), "").replace(",,", ",")
-            }
-        } else {
-            // nothing to remove
-            appStateString
-        }
-    }
-
-    private fun findState(appStateString: String, stateId: String): String {
-        val startPosOffset = 7
-        val noMatchFound = -1
-        val idIndex = appStateString.indexOf(stateId)
-        return if (idIndex >= noMatchFound) {
-            val searchString = appStateString.substring((idIndex - startPosOffset), appStateString.length)
-            var end = 0
-            var start = 0
-            var endIndex = 0
-            var currentIndex = 0
-            for (c in searchString) {
-                when (c) {
-                    '{' -> start++
-                    '}' -> end++
-                }
-                if (start == end) {
-                    endIndex = currentIndex + 1
-                    break
-                }
-                currentIndex++
-            }
-            searchString.substring(0, endIndex)
-        } else {
-            ""
-        }
-    }
 
 }
 

@@ -14,7 +14,11 @@ class StoreUnitTest {
     @Test
     fun getDeepCopy_success() {
         val store = DI.store
-        val expected = AppState(id = "RootState", isRoot = true)
+        val expected = AppState(
+            id = "RootState",
+            isRoot = true,
+            child = mutableListOf(AppState(id = "CounterState"), SearchResultState())
+        )
         assertEquals(true, store.isDeepEquals(expected))
     }
 

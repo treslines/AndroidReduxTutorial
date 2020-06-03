@@ -19,7 +19,7 @@ class WaitingForUserInputState : AppState(id = "WaitingForUserInputState")
 // Debug-Development actions: For each action, there is its corresponding state
 class DebugState : AppState(id = "DebugState")
 
-// TODO: every state knows its data model
-class CounterStateModel(val name: String)
+// every state knows its data model
+data class CounterStateModel(var counter: Int)
 
 
