@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
         val aSimpleCounterObserver = object : SimpleStateObserver<AppState> {
             override fun observe() = CounterState()
             override fun onChange(state: AppState) {
-                val data: CounterStateModel? = state.getDataModel(CounterStateModel::class.java)
+                val data: CounterStateModel? = state.getDataModel(CounterStateModel::class.java, state.data)
                 data?.let { xIdTxtCounter.text = it.counter.toString() }
             }
         }

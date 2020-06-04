@@ -14,8 +14,9 @@ import android.util.Log
 // WAY 1: most programmers are used to. just implement the method's signature, no magic!
 class ResetCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
-        if (old.hasData()) {
-            old.getDataModel(CounterStateModel::class.java)?.run {
+        val state = old.find("CounterState")
+        if (state.hasData()) {
+            state.getDataModel(CounterStateModel::class.java, state.data)?.run {
                 counter = 0
                 old.data = old.toDataModelJsonString(this)
             }
@@ -33,7 +34,7 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
         val state = old.find("CounterState")
         if (state.hasData()) {
-            state.getDataModel(CounterStateModel::class.java)?.run {
+            state.getDataModel(CounterStateModel::class.java, state.data)?.run {
                 counter--
                 old.insertOrUpdate(state)
             }
@@ -52,7 +53,7 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
     private val reducer: Reducer<AppState> = {
         val state = it.find("CounterState")
         if (state.hasData()) {
-            it.getDataModel(CounterStateModel::class.java)?.run {
+            it.getDataModel(CounterStateModel::class.java, state.data)?.run {
                 counter--
                 it.insertOrUpdate(state)
             }

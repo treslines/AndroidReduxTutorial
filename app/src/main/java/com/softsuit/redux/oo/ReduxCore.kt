@@ -82,9 +82,9 @@ open class AppState(
      * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
      */
-    fun <T> getDataModel(modelType: Class<T>): T? {
+    fun <T> getDataModel(modelType: Class<T>, data: String): T? {
         return try {
-            Gson().fromJson(Gson().toJson(data).toString(), modelType)
+            Gson().fromJson(Gson().toJson(data), modelType)
         } catch (e: Exception) {
             null
         }
