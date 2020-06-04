@@ -20,6 +20,6 @@ class WaitingForUserInputState : AppState(id = "WaitingForUserInputState")
 class DebugState : AppState(id = "DebugState")
 
 // every state knows its data model
-data class CounterStateModel(var counter: Int = 0)
+class CounterStateModel(var counter: Int = 0)
 
 

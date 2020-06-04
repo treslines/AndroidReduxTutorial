@@ -1,6 +1,6 @@
 package com.softsuit.redux
 
-import com.google.gson.Gson
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.softsuit.redux.oo.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -194,11 +194,11 @@ class StoreUnitTest {
         val rootState = AppState(
             id = "RootState",
             isRoot = true,
-            child = mutableListOf(AppState(id = "CounterState", data = Gson().toJson(CounterStateModel())), SearchResultState())
+            child = mutableListOf(AppState(id = "CounterState", data = ObjectMapper().writeValueAsString(CounterStateModel())), SearchResultState())
         )
-        val a = Gson().toJson(rootState)
+        val a = ObjectMapper().writeValueAsString(rootState)
 
-        Gson().fromJson<AppState>(a, AppState::class.java)?.let {
+        ObjectMapper().readValue<AppState>(a, AppState::class.java)?.let {
             val found = it.find("CounterState")
             if (found.id == "CounterState") {
                 println(found)

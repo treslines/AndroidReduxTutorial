@@ -1,6 +1,7 @@
 package com.softsuit.redux.oo
 
 import android.util.Log
+import com.fasterxml.jackson.databind.ObjectMapper
 
 // ------------------------------------------------------------------------------------------------
 // UI Actions
@@ -18,7 +19,8 @@ class ResetCounterAction(val eventName: String) : Action<AppState> {
         if (state.hasData()) {
             state.getDataModel(CounterStateModel::class.java, state.data)?.run {
                 counter = 0
-                old.data = old.toDataModelJsonString(this)
+                state.data = ObjectMapper().writeValueAsString(this)
+                old.data = old.toDataModelJsonString(state)
             }
             return old
         }
@@ -36,6 +38,7 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
         if (state.hasData()) {
             state.getDataModel(CounterStateModel::class.java, state.data)?.run {
                 counter--
+                state.data = ObjectMapper().writeValueAsString(this)
                 old.insertOrUpdate(state)
             }
             return old
@@ -54,7 +57,8 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
         val state = it.find("CounterState")
         if (state.hasData()) {
             it.getDataModel(CounterStateModel::class.java, state.data)?.run {
-                counter--
+                counter++
+                state.data = ObjectMapper().writeValueAsString(this)
                 it.insertOrUpdate(state)
             }
         }

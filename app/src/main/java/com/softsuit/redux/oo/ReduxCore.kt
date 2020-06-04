@@ -1,7 +1,7 @@
 package com.softsuit.redux.oo
 
 import android.util.Log
-import com.google.gson.Gson
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.Serializable
 
 /** state as a marker interface to enforce contract. */
@@ -77,14 +77,14 @@ open class AppState(
 ) : State {
     fun hasData(): Boolean = data.isNotEmpty()
     fun hasChild(): Boolean = child.isNotEmpty()
-    override fun toString(): String = Gson().toJson(this)
+    override fun toString(): String = ObjectMapper().writeValueAsString(this)
     /**
      * each subscriber knows which state it subscribes for, so it can
      * retrieve the right data model from the state as soon as it gets notified
      */
     fun <T> getDataModel(modelType: Class<T>, data: String): T? {
         return try {
-            Gson().fromJson(Gson().toJson(data), modelType)
+            ObjectMapper().readValue(data, modelType)
         } catch (e: Exception) {
             null
         }
@@ -92,13 +92,13 @@ open class AppState(
 
     fun <T> toDataModelJsonString(model: T): String {
         return try {
-            Gson().toJson(model)
+            ObjectMapper().writeValueAsString(model)
         } catch (e: Exception) {
             ""
         }
     }
 
-    fun getStateFromString(stateString: String): AppState = Gson().fromJson<AppState>(stateString, AppState::class.java)
+    fun getStateFromString(stateString: String): AppState = ObjectMapper().readValue<AppState>(stateString, AppState::class.java)
 
     fun insertOrUpdate(toUpdate: AppState): String {
         val actualState = this.toString()
@@ -106,7 +106,7 @@ open class AppState(
             // fast update by replacing whole object
             val appStateString = this.toString()
             val placeholder = appStateString.replace(find(toUpdate.id).toString(), "@ph@")
-            placeholder.replace("@ph@", Gson().toJson(toUpdate))
+            placeholder.replace("@ph@", ObjectMapper().writeValueAsString(toUpdate))
         } else {
             // add
             val appStateString = this.toString()
@@ -122,9 +122,9 @@ open class AppState(
     fun remove(toRemove: AppState): String {
         val appStateString = this.toString()
         return if (appStateString.contains(toRemove.id)) {
-            if (appStateString.replace(Gson().toJson(toRemove), "").length != appStateString.length) {
+            if (appStateString.replace(ObjectMapper().writeValueAsString(toRemove), "").length != appStateString.length) {
                 // object to remove is identical, just remove it
-                appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
+                appStateString.replace(ObjectMapper().writeValueAsString(toRemove), "").replace(",,", ",")
             } else {
                 // object exists but is not equals
                 find(toRemove.id).toString()
@@ -132,33 +132,6 @@ open class AppState(
         } else {
             // nothing to remove
             appStateString
-        }
-    }
-
-    fun findState(appStateString: String, stateId: String): String {
-        val startPosOffset = 7
-        val noMatchFound = -1
-        val idIndex = appStateString.indexOf(stateId)
-        return if (idIndex >= noMatchFound) {
-            val searchString = appStateString.substring((idIndex - startPosOffset), appStateString.length)
-            var end = 0
-            var start = 0
-            var endIndex = 0
-            var currentIndex = 0
-            for (c in searchString) {
-                when (c) {
-                    '{' -> start++
-                    '}' -> end++
-                }
-                if (start == end) {
-                    endIndex = currentIndex + 1
-                    break
-                }
-                currentIndex++
-            }
-            searchString.substring(0, endIndex)
-        } else {
-            ""
         }
     }
 
@@ -197,7 +170,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
             if (hasChanged(state)) {
-                field = Gson().fromJson<AppState>(state.toString(), AppState::class.java) as S
+                field = ObjectMapper().readValue<AppState>(state.toString(), AppState::class.java) as S
                 if (appState.hasChild()) {
                     appState.child.forEach { child ->
                         child?.let {
@@ -286,7 +259,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun unsubscribe(observer: ConditionStateObserver<S>) = conditionStateObservers.remove(element = observer)
 
     /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
-    private fun copyDeep(toCopy: S): S = Gson().fromJson<AppState>(toCopy.toString(), AppState::class.java) as S
+    private fun copyDeep(toCopy: S): S = ObjectMapper().readValue<AppState>(toCopy.toString(), AppState::class.java) as S
 
     fun isDeepEquals(incoming: S) = !hasChanged(incoming)
 

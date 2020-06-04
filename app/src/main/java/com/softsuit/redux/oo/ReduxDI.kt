@@ -1,6 +1,6 @@
 package com.softsuit.redux.oo
 
-import com.google.gson.Gson
+import com.fasterxml.jackson.databind.ObjectMapper
 
 /** Redux Store dependency Injection to be used everywhere in app. This is the place where you setup you store.
  *  Everytime you implement a new middleware, that's the place to update it by adding it to the list.
@@ -14,7 +14,7 @@ object DI {
     private val rootState = AppState(
         id = "RootState",
         isRoot = true,
-        child = mutableListOf(AppState(id = "CounterState", data = Gson().toJson(CounterStateModel())), SearchResultState())
+        child = mutableListOf(AppState(id = "CounterState", data = ObjectMapper().writeValueAsString(CounterStateModel())), SearchResultState())
     )
     val store = AppStore(initialState = rootState, chain = middlewareChain, logMode = true)
 }
