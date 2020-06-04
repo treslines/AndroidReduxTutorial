@@ -1,5 +1,6 @@
 package com.softsuit.redux
 
+import com.google.gson.Gson
 import com.softsuit.redux.oo.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -185,6 +186,24 @@ class StoreUnitTest {
         val store = AppStore(initialState = rootState)
 
         // TODO:
+    }
+
+    @Test
+    fun inputJsonAppString_parseIt_searchForTarget_success() {
+
+        val rootState = AppState(
+            id = "RootState",
+            isRoot = true,
+            child = mutableListOf(AppState(id = "CounterState", data = Gson().toJson(CounterStateModel())), SearchResultState())
+        )
+        val a = Gson().toJson(rootState)
+
+        Gson().fromJson<AppState>(a, AppState::class.java)?.let {
+            val found = it.find("CounterState")
+            if (found.id == "CounterState") {
+                println(found)
+            }
+        }
     }
 
 

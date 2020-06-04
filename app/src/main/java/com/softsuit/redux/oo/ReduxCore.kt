@@ -98,17 +98,19 @@ open class AppState(
         }
     }
 
+    fun getStateFromString(stateString: String): AppState = Gson().fromJson<AppState>(stateString, AppState::class.java)
+
     fun insertOrUpdate(toUpdate: AppState): String {
         val actualState = this.toString()
         return if (actualState.contains(toUpdate.id)) {
             // fast update by replacing whole object
             val appStateString = this.toString()
-            val placeholder = appStateString.replace(findState(appStateString, toUpdate.id), "@ph@")
+            val placeholder = appStateString.replace(find(toUpdate.id).toString(), "@ph@")
             placeholder.replace("@ph@", Gson().toJson(toUpdate))
         } else {
             // add
             val appStateString = this.toString()
-            val target = findState(appStateString, toUpdate.id)
+            val target = find(toUpdate.id).toString()
             val placeholder = appStateString.replace(target, "@ph@")
             val targetPlaceholder = target.replaceFirst("[", "[@ph@")
             val inserted = targetPlaceholder.replace("@ph@", "${toUpdate.toString()},")
@@ -125,7 +127,7 @@ open class AppState(
                 appStateString.replace(Gson().toJson(toRemove), "").replace(",,", ",")
             } else {
                 // object exists but is not equals
-                appStateString.replace(findState(appStateString, toRemove.id), "").replace(",,", ",")
+                find(toRemove.id).toString()
             }
         } else {
             // nothing to remove
@@ -159,6 +161,26 @@ open class AppState(
             ""
         }
     }
+
+    fun find(id: String): AppState {
+        if (id == this.id) {
+            return this
+        }
+        while (this.hasChild()) {
+            for (state in this.child) {
+                if (id == state.id) {
+                    return state
+                }
+            }
+        }
+        while (this.hasChild()) {
+            for (state in this.child) {
+                state.find(id)
+            }
+        }
+        return AppState()
+    }
+
 }
 
 /** represents the single source of truth in your andorid app. */
@@ -270,12 +292,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     /** return empty state if no match found */
     fun lookUpBy(state: S): S {
-        val targetString = appState.findState(appState.toString(), state.id)
-        return if (!targetString.isNullOrEmpty()) {
-            Gson().fromJson<AppState>(targetString, AppState::class.java) as S
-        } else {
-            AppState() as S
-        }
+        return appState.find(state.id) as S
     }
 
     override fun getStateName(): String = appState.id

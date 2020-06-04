@@ -31,10 +31,11 @@ class ResetCounterAction(val eventName: String) : Action<AppState> {
 class DecrementCounterAction(val eventName: String) : Action<AppState> {
     // does the same as way 1 but in one liner
     override fun reduce(old: AppState): AppState {
-        if (old.hasData()) {
-            old.getDataModel(CounterStateModel::class.java)?.run {
+        val state = old.find("CounterState")
+        if (state.hasData()) {
+            state.getDataModel(CounterStateModel::class.java)?.run {
                 counter--
-                old.data = old.toDataModelJsonString(this)
+                old.insertOrUpdate(state)
             }
             return old
         }
@@ -49,10 +50,11 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
 class IncrementCounterAction(val eventName: String) : Action<AppState> {
     // reducer logic implemented here or outside this class in another file. Ex: counter reducer file
     private val reducer: Reducer<AppState> = {
-        if (it.hasData()) {
+        val state = it.find("CounterState")
+        if (state.hasData()) {
             it.getDataModel(CounterStateModel::class.java)?.run {
                 counter--
-                it.data = it.toDataModelJsonString(this)
+                it.insertOrUpdate(state)
             }
         }
         it
