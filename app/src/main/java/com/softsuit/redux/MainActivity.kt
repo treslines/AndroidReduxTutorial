@@ -52,8 +52,8 @@ class MainActivity : AppCompatActivity() {
             true
         }
         val aConditionalCounterObserver = object : ConditionStateObserver<AppState> {
-            override fun match() = aCondition
             override fun observe() = CounterState()
+            override fun match() = aCondition
             override fun onChange(state: AppState) {
                 Toast.makeText(
                     this@MainActivity,
@@ -91,14 +91,12 @@ class MainActivity : AppCompatActivity() {
     // --------------------------------------------------------------------------
     // 6. dispatch actions on user input
     // --------------------------------------------------------------------------
-    fun decrement(view: View) = store.reduce(DecrementCounterAction("Decrement Counter Event"))
-
-    fun increment(view: View) = store.reduce(IncrementCounterAction("Increment Counter Event"))
+    fun decrement(view: View) = store.reduce(DecrementCounterAction("DecrementCounterEvent"))
+    fun increment(view: View) = store.reduce(IncrementCounterAction("IncrementCounterEvent"))
 
     // --------------------------------------------------------------------------
     // 7. dispatch middleware action on user input
     // --------------------------------------------------------------------------
-    fun search(view: View) = store.dispatch(SearchingAction("Searching Event"))
-
+    fun search(view: View) = store.dispatch(SearchingAction("SearchingEvent"))
     fun debug(view: View) = store.dispatch(DebugAction())
 }

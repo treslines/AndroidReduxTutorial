@@ -98,7 +98,7 @@ open class AppState(
         }
     }
 
-    fun getStateFromString(stateString: String): AppState = ObjectMapper().readValue<AppState>(stateString, AppState::class.java)
+    fun getStateFromString(stateString: String): AppState = ObjectMapper().readValue(stateString, AppState::class.java)
 
     fun insertOrUpdate(toUpdate: AppState): String {
         val actualState = this.toString()
@@ -122,7 +122,8 @@ open class AppState(
     fun remove(toRemove: AppState): String {
         val appStateString = this.toString()
         return if (appStateString.contains(toRemove.id)) {
-            if (appStateString.replace(ObjectMapper().writeValueAsString(toRemove), "").length != appStateString.length) {
+            val found = find(toRemove.id).toString()
+            if (appStateString.replace(found, "").length != appStateString.length) {
                 // object to remove is identical, just remove it
                 appStateString.replace(ObjectMapper().writeValueAsString(toRemove), "").replace(",,", ",")
             } else {
