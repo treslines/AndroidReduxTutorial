@@ -1,12 +1,13 @@
-package com.softsuit.redux.oo
+package com.softsuit.redux.example
 
-// ------------------------------------------------------------------------------------------------
-// Middleware Implementations
-// ------------------------------------------------------------------------------------------------
-//
-// Api calls, Asyc tasks, Computations etc.
-//
-// ------------------------------------------------------------------------------------------------
+import com.softsuit.redux.oo.Action
+import com.softsuit.redux.oo.AppState
+import com.softsuit.redux.oo.AppStore
+import com.softsuit.redux.oo.Middleware
+
+// +------------------------------------------------------------------------------------------------+
+// | Middleware Implementations                                                                     |
+// +------------------------------------------------------------------------------------------------+
 
 /**
  * Imagine that this middleware performs some heavy weight db search tasks in background. The idea
@@ -28,7 +29,11 @@ class SearchApiMiddleware : Middleware<AppState> {
         when (action) {
             is SearchingAction -> {
                 // use another action to log states before and after change without actually changing the current AppState
-                LogMiddlewareAction(state.id, SearchingAction.description, LogOption.MID_BEFORE_CHANGE).reduce(state)
+                LogMiddlewareAction(
+                    state.id,
+                    SearchingAction.description,
+                    LogOption.MID_BEFORE_CHANGE
+                ).reduce(state)
 
                 // instruct now store to move to the next state which should be "Searching for Keyword"
                 // keep in mind that this will cause that all state subscribers are gonna be notified again, but since
@@ -36,7 +41,11 @@ class SearchApiMiddleware : Middleware<AppState> {
                 val newAppState = store.reduce(SearchForKeywordAction("Search For Keyword Event", "Ricardo"))
 
                 // log new state after change just for show case
-                LogMiddlewareAction(newAppState.id, SearchForKeywordAction.description, LogOption.MID_AFTER_CHANGE).reduce(newAppState)
+                LogMiddlewareAction(
+                    newAppState.id,
+                    SearchForKeywordAction.description,
+                    LogOption.MID_AFTER_CHANGE
+                ).reduce(newAppState)
 
                 /** Simulation of "heavy" db search in background for learning purpose only */
                 Thread(Runnable {
@@ -51,7 +60,11 @@ class SearchApiMiddleware : Middleware<AppState> {
                     store.reduce(SearchResultAction("Search Result Event", keywordToSearchFor))
 
                     // log this middleware individually
-                    LogMiddlewareAction(state.id, SearchingAction.description, LogOption.MID_AFTER_CHANGE).reduce(state)
+                    LogMiddlewareAction(
+                        state.id,
+                        SearchingAction.description,
+                        LogOption.MID_AFTER_CHANGE
+                    ).reduce(state)
                 }).start()
 
                 // you may call next here, if you think it is necessary, useful or your process should continue...
@@ -65,14 +78,9 @@ class SearchApiMiddleware : Middleware<AppState> {
     }
 }
 
-// ------------------------------------------------------------------------------------------------
-// Util Middleware Implementations
-// ------------------------------------------------------------------------------------------------
-//
-// Log, perform common tasks, analytics etc.
-//
-// ------------------------------------------------------------------------------------------------
-
+// +------------------------------------------------------------------------------------------------+
+// | Util Middleware Implementations                                                                |
+// +------------------------------------------------------------------------------------------------+
 /**
  * This middleware is interested in DebugActions only.
  * When dispatched it will log out the last current state only.

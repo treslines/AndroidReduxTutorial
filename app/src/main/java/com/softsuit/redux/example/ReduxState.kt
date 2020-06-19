@@ -1,4 +1,6 @@
-package com.softsuit.redux.oo
+package com.softsuit.redux.example
+
+import com.softsuit.redux.oo.AppState
 
 /**
  * This is the central place, where you define all your app states. Those states could be placed by its corresponding action also,
@@ -7,19 +9,20 @@ package com.softsuit.redux.oo
  * perfectly here in one clear, single file.
  */
 
-// UI-Actions: For each action, there is its corresponding state
+// +------------------------------------------------------------------------------------------------+
+// | State: Represents either a transition, navigation or UI-Actions:                               |
+// | For each action, exits its corresponding state                                                 |
+// +------------------------------------------------------------------------------------------------+
 class CounterState() : AppState(id = "CounterState")
-
-// Search Middleware Actions: For each action, there is its corresponding state
 class SearchResultState : AppState(id = "SearchResultState")
 class SearchingState : AppState(id = "SearchingState")
 class SearchForKeywordState : AppState(id = "SearchForKeywordState")
 class WaitingForUserInputState : AppState(id = "WaitingForUserInputState")
-
-// Debug-Development actions: For each action, there is its corresponding state
 class DebugState : AppState(id = "DebugState")
 
-// every state knows its data model
+// +------------------------------------------------------------------------------------------------+
+// | Models: Every state knows its data model                                                       |
+// +------------------------------------------------------------------------------------------------+
 class CounterStateModel(var counter: Int = 0)
 
 

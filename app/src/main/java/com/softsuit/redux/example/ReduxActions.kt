@@ -1,18 +1,14 @@
-package com.softsuit.redux.oo
+package com.softsuit.redux.example
 
 import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.softsuit.redux.oo.Action
+import com.softsuit.redux.oo.AppState
+import com.softsuit.redux.oo.Reducer
 
-// ------------------------------------------------------------------------------------------------
-// UI Actions
-// ------------------------------------------------------------------------------------------------
-//
-// Trivial UI actions - Direct user actions with immediately response
-// You are gonna see 3 ways you could do the same thing in kotlin but in slightly different ways
-//
-// ------------------------------------------------------------------------------------------------
-
-// WAY 1: most programmers are used to. just implement the method's signature, no magic!
+// +------------------------------------------------------------------------------------------------+
+// | Simple Actions, transitions, navigation, clicks etc.                                           |
+// +------------------------------------------------------------------------------------------------+
 class ResetCounterAction(val eventName: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
         val state = old.find("CounterState")
@@ -26,13 +22,8 @@ class ResetCounterAction(val eventName: String) : Action<AppState> {
         }
         return old
     }
-    companion object Id {
-        val description = "ResetCounterAction"
-    }
 }
-
 class DecrementCounterAction(val eventName: String) : Action<AppState> {
-    // does the same as way 1 but in one liner
     override fun reduce(old: AppState): AppState {
         val state = old.find("CounterState")
         if (state.hasData()) {
@@ -45,14 +36,8 @@ class DecrementCounterAction(val eventName: String) : Action<AppState> {
         }
         return old
     }
-    companion object Id {
-        val description = "DecrementCounterAction"
-    }
 }
-
-// WAY 2: implement a typealias and assign it to the method! - also nice whenever needed!
 class IncrementCounterAction(val eventName: String) : Action<AppState> {
-    // reducer logic implemented here or outside this class in another file. Ex: counter reducer file
     private val reducer: Reducer<AppState> = {
         val state = it.find("CounterState")
         if (state.hasData()) {
@@ -66,19 +51,11 @@ class IncrementCounterAction(val eventName: String) : Action<AppState> {
     }
     // reducer result assigned to the method as return type
     override fun reduce(old: AppState) = reducer.invoke(old)
-    companion object Id {
-        val description = "IncrementCounterAction"
-    }
 }
 
-// ------------------------------------------------------------------------------------------------
-// Middleware Actions
-// ------------------------------------------------------------------------------------------------
-//
-// Side effects, api calls, db operations etc. - actions with delayed response
-//
-// ------------------------------------------------------------------------------------------------
-
+// +------------------------------------------------------------------------------------------------+
+// | Middleware Actions: Side effects, api calls, db operations etc. actions with delayed response  |
+// +------------------------------------------------------------------------------------------------+
 class SearchingAction(private val eventDescription: String) : Action<AppState> {
     override fun reduce(old: AppState): AppState {
         //old.jsonData["SearchingState"] = true
@@ -89,15 +66,13 @@ class SearchingAction(private val eventDescription: String) : Action<AppState> {
     }
 }
 
-class SearchResultAction(private val eventDescription: String, private val keywordToSearchFor: String) : Action<AppState> {
+class SearchResultAction(private val eventDescription: String, private val keywordToSearchFor: String) :
+    Action<AppState> {
     override fun reduce(old: AppState): AppState {
         // simulating long search process in database
         Thread.sleep(1000 * 5)
         //old.jsonData["SearchResultState"] = keywordToSearchFor // imagine: here would be the real result
         return AppState(id = "SearchResultState", data = "LinkedHashMap(old.jsonData)")
-    }
-    companion object Id {
-        val description = "Search Result"
     }
 }
 
@@ -116,48 +91,33 @@ class WaitingForUserInputAction(private val eventDescription: String) : Action<A
         //old.jsonData["WaitingForUserInputState"] = true
         return AppState(id = "WaitingForUserInputState", data = "LinkedHashMap(old.jsonData)")
     }
-    companion object Id {
-        val description = "WaitingForUserInputAction"
-    }
 }
 
-// ------------------------------------------------------------------------------------------------
-//  Util Actions
-// ------------------------------------------------------------------------------------------------
-//
-// log, debug, perform common tasks, analytics etc.
-//
-// ------------------------------------------------------------------------------------------------
-
-class DebugAction() : Action<AppState> {
-
+// +------------------------------------------------------------------------------------------------+
+// | Simple Actions: log, debug, perform common tasks, analytics etc.                               |
+// +------------------------------------------------------------------------------------------------+
+class DebugAction : Action<AppState> {
     private val reducer: Reducer<AppState> = {
-        val stateName = it.child!!::class.java.simpleName
-        //Log.d(stateName, it.jsonData[stateName].toString())
+        val stateName = it.subStates!!::class.java.simpleName
         AppState(id = description, data = "LinkedHashMap(it.jsonData)")
     }
-
     override fun reduce(old: AppState) = reducer.invoke(old)
     companion object Id {
         val description = "DebugAction"
     }
 }
 
-class LogAction() : Action<AppState> {
+class LogAction : Action<AppState> {
     private val reducer: Reducer<AppState> = {
         Log.d("logging", "AppData: ${it.id}")
-        Log.d("logging", "AppData>Internal: ${it.child}")
+        Log.d("logging", "AppData>Internal: ${it.subStates}")
         it
     }
-
     override fun reduce(old: AppState) = reducer.invoke(old)
-    companion object Id {
-        val description = "LogAction"
-    }
 }
 
-class LogMiddlewareAction(val stateDesc: String, val actionDesc: String, val option: LogOption) : Action<AppState> {
-
+class LogMiddlewareAction(val stateDesc: String, val actionDesc: String, val option: LogOption) :
+    Action<AppState> {
     override fun reduce(old: AppState): AppState {
         when (option) {
             LogOption.MID_BEFORE_CHANGE -> Log.d("mid", "state <-- $stateDesc, action IN <-- $actionDesc")
@@ -167,11 +127,7 @@ class LogMiddlewareAction(val stateDesc: String, val actionDesc: String, val opt
         }
         return old
     }
-    companion object Id {
-        val description = "LogMiddlewareAction"
-    }
 }
-
 enum class LogOption {
     MID_BEFORE_CHANGE, MID_AFTER_CHANGE, APP_BEFORE_CHANGE, APP_AFTER_CHANGE // add other option as they emerge...
 }

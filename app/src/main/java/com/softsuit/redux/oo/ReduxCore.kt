@@ -72,11 +72,11 @@ interface Store<S : State> {
 open class AppState(
     var id: String = "EmptyState",
     var data: String = "",
-    var child: MutableList<AppState> = mutableListOf(),
+    var subStates: MutableList<AppState> = mutableListOf(),
     var isRoot: Boolean = false
 ) : State {
     fun hasData(): Boolean = data.isNotEmpty()
-    fun hasChild(): Boolean = child.isNotEmpty()
+    fun hasSubStates(): Boolean = subStates.isNotEmpty()
     override fun toString(): String = ObjectMapper().writeValueAsString(this)
     /**
      * each subscriber knows which state it subscribes for, so it can
@@ -140,15 +140,15 @@ open class AppState(
         if (id == this.id) {
             return this
         }
-        while (this.hasChild()) {
-            for (state in this.child) {
+        while (this.hasSubStates()) {
+            for (state in this.subStates) {
                 if (id == state.id) {
                     return state
                 }
             }
         }
-        while (this.hasChild()) {
-            for (state in this.child) {
+        while (this.hasSubStates()) {
+            for (state in this.subStates) {
                 state.find(id)
             }
         }
@@ -171,9 +171,9 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         // of middleware asynchronous tasks that could potentially arrive at the same time
         @Synchronized set(state) {
             if (hasChanged(state)) {
-                field = ObjectMapper().readValue<AppState>(state.toString(), AppState::class.java) as S
-                if (appState.hasChild()) {
-                    appState.child.forEach { child ->
+                field = ObjectMapper().readValue(state.toString(), AppState::class.java) as S
+                if (appState.hasSubStates()) {
+                    appState.subStates.forEach { child ->
                         child?.let {
                             println(it.id) // TODO: remove it after tests!
                             notifySubscribers(it as S)
@@ -187,8 +187,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
         notifyMultiStateSubscribers(state)
         notifySimpleStateSubscribers(state)
         notifyConditionalStateSubscribers(state)
-        if (state.hasChild()) {
-            state.child.forEach { child ->
+        if (state.hasSubStates()) {
+            state.subStates.forEach { child ->
                 child?.let { it ->
                     println(it.id)
                     notifySubscribers(it as S)
@@ -260,7 +260,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     override fun unsubscribe(observer: ConditionStateObserver<S>) = conditionStateObservers.remove(element = observer)
 
     /** kotlin's copy method by data classes are only shallow copies and do not support deep copies */
-    private fun copyDeep(toCopy: S): S = ObjectMapper().readValue<AppState>(toCopy.toString(), AppState::class.java) as S
+    private fun copyDeep(toCopy: S): S = ObjectMapper().readValue(toCopy.toString(), AppState::class.java) as S
 
     fun isDeepEquals(incoming: S) = !hasChanged(incoming)
 

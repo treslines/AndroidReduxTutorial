@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.softsuit.redux.example.*
 import com.softsuit.redux.oo.*
 import com.softsuit.redux.oo.DI.store
 import kotlinx.android.synthetic.main.activity_main.*
@@ -73,7 +74,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(
                         this@MainActivity,
-                        "Result: ${state.child!!::class.java.simpleName}",
+                        "Result: ${state.subStates!!::class.java.simpleName}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
