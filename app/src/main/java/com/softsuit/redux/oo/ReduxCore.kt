@@ -238,7 +238,8 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     /** dispatch causes that every middleware interested in that action, will decide by its own, which next action they want to perform */
     override fun dispatch(action: Action<S>) {
         if (chain != null && chain.isNotEmpty()) {
-            chain[0].apply(getAppState(), action, chain, 0, this)
+            chain[0].apply(getAppState(), action,/*, chain, 0,*/ this)
+            next(action, chain, 0)
         } else {
             reduce(action)
         }
@@ -277,6 +278,38 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
 
     private fun hasChanged(state: AppState): Boolean = state.toString() != appState.toString()
 
+    // --------------------
+    /**
+     * this method gets called every time the dispatch() method is called to ensure that actions are forwarded to store.
+     */
+    private fun next(
+        action: Action<S>,
+        chain: List<Middleware<S>>,
+        chainIndex: Int
+    ) {
+        val nextIndex = chainIndex + 1
+        if (isEndOfChain(nextIndex, chain)) {
+            this.reduce(action).also {
+                if (isLogModeOn()) {
+                    Log.i("Redux", "Store reduced action=${action.getName()}")
+                }
+            }
+        } else {
+            chain[nextIndex].apply(this.getAppState(), action, this).also {
+                if (isLogModeOn()) {
+                    Log.i("Redux", "Middleware=${chain[nextIndex].getName()} dispatched state=${this.getStateName()} with action=${action.getName()}")
+                }
+            }
+            next(action, chain, chainIndex)
+        }
+    }
+
+    /**
+     * You should not call this method by yourself. It was designed to be used by
+     * next() method to decide if the middleware reached the end of the chain or not.
+     */
+    private fun isEndOfChain(nextIndex: Int, chain: List<Middleware<S>>) = nextIndex == chain.size
+
 }
 
 /**
@@ -287,54 +320,12 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
  */
 interface Middleware<S : AppState> {
     /**
-     * Call this method inside you middleware implementation whenever you
-     * think that it makes sense. It is totally up to your business logic
+     * Place where you define your middleware logic. This method will be called from the store.
      */
-    fun next(
-        state: S,
-        action: Action<S>,
-        chain: List<Middleware<S>>,
-        chainIndex: Int,
-        store: AppStore<S>
-    ) {
-        val nextIndex = chainIndex + 1
-        if (isEndOfChain(nextIndex, chain)) {
-            store.reduce(action).also {
-                if (store.isLogModeOn()) {
-                    Log.i("Redux", "Store reduced action=${action.getName()}")
-                }
-            }
-        } else {
-            chain[nextIndex].apply(state, action, chain, nextIndex, store).also {
-                if (store.isLogModeOn()) {
-                    Log.i("Redux", "Middleware=${chain[nextIndex].getName()} dispatched state=${store.getStateName()} with action=${action.getName()}")
-                }
-            }
-        }
-    }
-
-    /**
-     * You should not call this method by yourself. This method gets called
-     * automatically from the store whenever its dispatch() method is called
-     */
-    fun apply(
-        state: S,
-        action: Action<S>,
-        chain: List<Middleware<S>>,
-        chainIndex: Int,
-        store: AppStore<S>
-    )
-
-    /**
-     * You should not call this method by yourself. It was designed to be used by
-     * next() method to decide if the middleware reached the end of the chain or not.
-     */
-    private fun isEndOfChain(nextIndex: Int, chain: List<Middleware<S>>) = nextIndex == chain.size
+    fun apply(state: S, action: Action<S>, store: AppStore<S>)
 
     /** for traceability and debugging only */
     fun getName(): String = this::class.java.name
 }
-
-
 
 
