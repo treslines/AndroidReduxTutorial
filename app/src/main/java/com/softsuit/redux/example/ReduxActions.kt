@@ -16,7 +16,7 @@ class ResetCounterAction(val eventName: String) : Action<AppState> {
             state.getDataModel(CounterStateModel::class.java, state.data)?.run {
                 counter = 0
                 state.data = ObjectMapper().writeValueAsString(this)
-                old.data = old.toDataModelJsonString(state)
+                old.data = old.getDataModelString(state)
             }
             return old
         }

@@ -90,7 +90,7 @@ open class AppState(
         }
     }
 
-    fun <T> toDataModelJsonString(model: T): String {
+    fun <T> getDataModelString(model: T): String {
         return try {
             ObjectMapper().writeValueAsString(model)
         } catch (e: Exception) {
@@ -281,8 +281,7 @@ class AppStore<S : AppState>(initialState: S, private val chain: List<Middleware
     }
 
     private fun hasChanged(state: AppState): Boolean = state.toString() != appState.toString()
-
-    // --------------------
+    
     /**
      * this method gets called every time the dispatch() method is called to ensure that actions are forwarded to store.
      */

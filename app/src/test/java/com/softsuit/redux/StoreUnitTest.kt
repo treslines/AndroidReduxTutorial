@@ -197,6 +197,10 @@ class StoreUnitTest {
             override fun reduce(old: AppState): AppState {
                 if (old.subStates[3].subStates[0].subStates[1].id == "Child 5") {
                     old.subStates[3].subStates[0].subStates[1].data = old.updateDataModel(SampleStateModel())
+                    var data = old.getDataModel(SampleStateModel::class.java, old.subStates[3].subStates[0].subStates[1].data)
+                    data?.name = "Ricardo"
+                    data?.nachname = "Ferreira"
+                    old.subStates[3].subStates[0].subStates[1].data = old.updateDataModel(data as Any)
                 }
                 return old
             }
@@ -204,7 +208,8 @@ class StoreUnitTest {
 
         val appStateAfterChange = store.getAppState()
         assertNotEquals(appStateBeforeChange, appStateAfterChange)
-        assertEquals(appStateAfterChange.subStates[3].subStates[0].subStates[1].data, ObjectMapper().writeValueAsString(SampleStateModel()))
+        val expected = ObjectMapper().writeValueAsString(SampleStateModel(name = "Ricardo", nachname = "Ferreira"))
+        assertEquals(appStateAfterChange.subStates[3].subStates[0].subStates[1].data, expected)
     }
 
     @Test
