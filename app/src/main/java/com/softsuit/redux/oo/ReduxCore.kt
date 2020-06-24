@@ -119,6 +119,10 @@ open class AppState(
         }
     }
 
+    fun updateDataModel(model: Any): String {
+        return ObjectMapper().writeValueAsString(model)
+    }
+
     fun remove(toRemove: AppState): String {
         val appStateString = this.toString()
         return if (appStateString.contains(toRemove.id)) {

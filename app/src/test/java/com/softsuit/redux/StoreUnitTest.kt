@@ -2,6 +2,7 @@ package com.softsuit.redux
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.softsuit.redux.example.CounterStateModel
+import com.softsuit.redux.example.SampleStateModel
 import com.softsuit.redux.example.SearchResultState
 import com.softsuit.redux.oo.*
 import org.junit.Assert.assertEquals
@@ -190,7 +191,20 @@ class StoreUnitTest {
         val rootState = AppState(id = "ReduxTutorialApp", isRoot = true, subStates = children)
         val store = AppStore(initialState = rootState)
 
-        // TODO:
+        val appStateBeforeChange = store.getAppState()
+
+        store.reduce(object : Action<AppState> {
+            override fun reduce(old: AppState): AppState {
+                if (old.subStates[3].subStates[0].subStates[1].id == "Child 5") {
+                    old.subStates[3].subStates[0].subStates[1].data = old.updateDataModel(SampleStateModel())
+                }
+                return old
+            }
+        })
+
+        val appStateAfterChange = store.getAppState()
+        assertNotEquals(appStateBeforeChange, appStateAfterChange)
+        assertEquals(appStateAfterChange.subStates[3].subStates[0].subStates[1].data, ObjectMapper().writeValueAsString(SampleStateModel()))
     }
 
     @Test

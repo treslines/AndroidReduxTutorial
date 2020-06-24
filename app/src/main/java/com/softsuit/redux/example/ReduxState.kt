@@ -24,5 +24,6 @@ class DebugState : AppState(id = "DebugState")
 // | Models: Every state knows its data model                                                       |
 // +------------------------------------------------------------------------------------------------+
 class CounterStateModel(var counter: Int = 0)
+class SampleStateModel(var name: String = "sample", var nachname: String = "example")
 
 
