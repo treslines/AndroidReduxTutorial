@@ -156,7 +156,7 @@ val CounterStateReducer: Reducer<CounterState> = { old, action ->
 <b>Ricardo Ferreira</b>
 Software Engineer at SopraSteria <a href="https://www.soprasteria.com/">https://www.soprasteria.com/</a>
 Instagram: ricardo7307
-Twitter: r_i_c_a_r_d_o_f
+Twitter: ricardo_7307
 Other projects you may like also: 
 - Natural UML <a href="https://treslines.github.io/">Create UML, Use Case or State Diagrams Online For Free!</a> 
 - Orchid Password App <a href="https://play.google.com/store/apps/details?id=com.softsuit.orchid">Offline password manger resistant to quantum computing attacks!</a> 👊
